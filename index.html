@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自主檢查表 離線版</title>
+  <meta name="theme-color" content="#7c3aed" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" href="icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="自檢表" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="app.css" />
+</head>
+<body>
+  <!-- 自主檢查表離線版：資料只存在這台裝置，不需網路與伺服器 -->
+  <header class="ol-bar">
+    <div class="ol-brand">
+      <img src="icons/icon-192.png" alt="" width="28" height="28" />
+      <div>
+        <div class="ol-title">自主檢查表</div>
+        <div class="ol-sub">離線版・資料存在本機</div>
+      </div>
+    </div>
+    <label class="ol-project">
+      <span>工地：</span>
+      <select id="olProject" aria-label="目前工地"></select>
+    </label>
+    <button class="ol-btn" id="olManage" title="新增、改名、刪除工地">✎ 工地</button>
+    <button class="ol-btn" id="olBackup" title="匯出或匯入備份">💾 備份</button>
+    <span class="ol-status" id="olStatus" hidden></span>
+  </header>
+
+  <main class="ol-content" id="content"><div class="sk-empty">載入中…</div></main>
+
+  <dialog class="sk-dialog pj-dialog" id="olDialog"></dialog>
+  <input type="file" id="olImportFile" accept=".json,application/json" hidden />
+
+  <script>
+    // 共用的自主檢查表畫面（js/pages/self-check.js）用 registerPage 註冊
+    window.PAGES = {};
+    function registerPage(id, def) { window.PAGES[id] = def; }
+  </script>
+  <script src="offline-store.js"></script>
+  <script src="js/pages/self-check-print.js"></script>
+  <script src="js/pages/self-check.js"></script>
+  <script src="offline-app.js"></script>
+</body>
+</html>

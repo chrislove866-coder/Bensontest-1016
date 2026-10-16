@@ -1,0 +1,32 @@
+/* 自主檢查表離線版：外框（填表畫面共用主網站的 css/style.css） */
+body { margin: 0; background: var(--page-bg); }
+.ol-bar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 16px; background: #fff; border-bottom: 1px solid #e8ebf0;
+}
+.ol-brand { display: flex; align-items: center; gap: 8px; margin-right: auto; }
+.ol-brand img { border-radius: 6px; }
+.ol-title { font-weight: 700; font-size: 16px; }
+.ol-sub { font-size: 11px; color: var(--muted); }
+.ol-project { display: flex; align-items: center; gap: 4px; font-size: 13px; color: var(--muted); }
+.ol-project select { max-width: 180px; padding: 6px 8px; font: inherit; font-size: 14px; color: var(--text); border: 1px solid #d9dde4; border-radius: 6px; background: #fff; }
+.ol-btn { padding: 6px 10px; font-size: 13px; color: #374151; background: #fff; border: 1px solid #d9dde4; border-radius: 6px; white-space: nowrap; }
+.ol-btn:hover { border-color: #7c3aed; color: #7c3aed; }
+.ol-status { padding: 3px 8px; font-size: 12px; color: #1d7a2a; background: #e8f7ea; border-radius: 10px; white-space: nowrap; }
+.ol-content { padding: 16px; max-width: 1200px; margin: 0 auto; }
+
+/* 備份視窗 */
+.ol-backup p { margin: 0; font-size: 13px; color: #4b5563; line-height: 1.6; }
+.ol-backup-actions { display: flex; flex-direction: column; gap: 8px; }
+.ol-backup-actions .ol-btn { padding: 10px 12px; font-size: 14px; text-align: left; }
+.ol-tip { padding: 8px 10px; font-size: 12px; color: #6b5300; background: #fffbea; border: 1px solid #f3e3a1; border-radius: 6px; line-height: 1.6; }
+
+@media (max-width: 600px) {
+  .ol-bar { padding: 8px 10px; }
+  .ol-sub { display: none; }
+  .ol-project > span { display: none; }
+  .ol-project select { max-width: 130px; }
+  .ol-content { padding: 10px; }
+}
+@media print { .ol-bar { display: none !important; } }
