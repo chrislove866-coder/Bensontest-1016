@@ -59,11 +59,15 @@
       ],
       signReview: '複查人員簽名', signManager: '工地負責人（或工地主任）簽名', signWorker: '現場施工人員（檢查人員）簽名',
       signPad: '（手寫簽名區）', signClear: '清除', signHint: '請在框內簽名',
+      extraTitle: '其他檢查項目（自行填寫）', extraHint: '範本以外需要檢查的項目，空白的列不會儲存',
+      extraName: '檢查項目', extraStd: '管理標準', extraAdd: '＋ 新增一列', extraDel: '刪除此列',
       reset: '↺ 清空重填', remove: '🗑 刪除這份檢查表',
       resetConfirm: '清空這份檢查表的所有填寫內容（標記、說明、複查結果、簽名）？\n\n按「儲存」後才會生效；不想清空可按 ✕ 關閉。',
       resetDone: '已清空，按「儲存」後生效',
+      discardConfirm: '這份檢查表有尚未儲存的內容，確定要關閉嗎？\n\n要保留內容請按「取消」，再按「💾 儲存」。',
       removeConfirm: n => `確定刪除「${n}」？\n刪除後無法復原。`,
       pvBack: '← 返回填表', pvTitle: n => `預覽：${n}`, pvHint: '顯示目前填寫的內容（含尚未儲存的修改）',
+      pvFit: p => `已自動縮小為 ${p}%，可印成一頁`,
       pvLang: '列印語言', print: '🖨 列印', pdf: '⬇ 下載 PDF', pdfBusy: '產生中…',
     },
     vi: {
@@ -93,11 +97,15 @@
       signReview: 'Chữ ký người kiểm tra lại', signManager: 'Chữ ký người phụ trách công trường (hoặc chỉ huy trưởng)',
       signWorker: 'Chữ ký nhân viên thi công hiện trường (người kiểm tra)',
       signPad: ' (khu vực ký tay)', signClear: 'Xóa', signHint: 'Vui lòng ký trong khung',
+      extraTitle: 'Hạng mục kiểm tra khác (tự điền)', extraHint: 'Các hạng mục cần kiểm tra ngoài mẫu; dòng để trống sẽ không được lưu',
+      extraName: 'Nội dung kiểm tra', extraStd: 'Tiêu chuẩn quản lý', extraAdd: '＋ Thêm dòng', extraDel: 'Xóa dòng này',
       reset: '↺ Xóa trắng, điền lại', remove: '🗑 Xóa phiếu này',
       resetConfirm: 'Xóa toàn bộ nội dung đã điền của phiếu này (đánh dấu, ghi chú, kết quả kiểm tra lại, chữ ký)?\n\nChỉ có hiệu lực sau khi nhấn "Lưu"; nếu không muốn xóa, nhấn ✕ để đóng.',
       resetDone: 'Đã xóa trắng, nhấn "Lưu" để áp dụng',
+      discardConfirm: 'Phiếu này có nội dung chưa lưu, bạn có chắc muốn đóng không?\n\nĐể giữ lại nội dung, nhấn "Hủy" rồi nhấn "💾 Lưu".',
       removeConfirm: n => `Xác nhận xóa "${n}"?\nSau khi xóa không thể khôi phục.`,
       pvBack: '← Quay lại', pvTitle: n => `Xem trước: ${n}`, pvHint: 'Hiển thị nội dung đang điền (kể cả phần chưa lưu)',
+      pvFit: p => `Đã tự động thu nhỏ còn ${p}% để in vừa một trang`,
       pvLang: 'Ngôn ngữ in', print: '🖨 In', pdf: '⬇ Tải PDF', pdfBusy: 'Đang tạo…',
     },
   };
@@ -142,7 +150,11 @@
   const forms = () => state.forms;
 
   const markedCount = f => f.marks.filter(Boolean).length;
-  const failCount = f => f.marks.filter(m => m === 'x').length;
+  // 不合格數包含自行填寫的「其他檢查項目」；完成度只看範本項目
+  const failCount = f => f.marks.filter(m => m === 'x').length + (f.extras || []).filter(x => x.mark === 'x').length;
+  const EXTRA_ROWS = 3; // 與 Word 範本相同，預設 3 列空白
+  const blankExtra = () => ({ name: '', std: '', mark: null, note: '' });
+  const isBlankExtra = x => !x.name.trim() && !x.std.trim() && !x.mark && !x.note.trim();
   function statusOf(f) {
     const n = markedCount(f);
     if (n === 0) return 'todo';
@@ -344,8 +356,45 @@
               </li>`;
           }).join('')}
         </ol>
+        ${extrasHTML(items.length)}
         ${footerHTML()}
       </div>`;
+  }
+
+  /* ---------- 其他檢查項目（自行填寫，對應 Word 範本最後的空白列） ---------- */
+  function extrasHTML(start) {
+    const rows = state.draft.extras;
+    return `
+      <section class="sk-section sk-extras">
+        <h4>${T('extraTitle')}</h4>
+        <div class="sk-extras-hint">${T('extraHint')}</div>
+        <ol class="sk-items">
+          ${rows.map((x, j) => {
+            const cls = x.mark === 'o' ? 'pass' : x.mark === 'x' ? 'fail' : x.mark === '/' ? 'na' : '';
+            const no = start + j + 1;
+            return `
+              <li class="sk-item sk-extra ${cls ? 'is-' + cls : ''}">
+                <div class="sk-item-main">
+                  <span class="sk-item-no">${no}.</span>
+                  <div class="sk-extra-fields">
+                    <input data-xfield="name" data-xi="${j}" value="${esc(x.name)}" placeholder="${esc(T('extraName'))}" maxlength="200" />
+                    <input data-xfield="std" data-xi="${j}" value="${esc(x.std)}" placeholder="${esc(T('extraStd'))}" maxlength="200" />
+                  </div>
+                  <div class="sk-marks" role="group" aria-label="${esc(T('itemAria')(no))}">
+                    ${MARKS.map(mk => `
+                      <button class="sk-mark sk-mark-${mk.v === '/' ? 'na' : mk.v} ${x.mark === mk.v ? 'on' : ''}" data-xmark="${mk.v}" data-xi="${j}"
+                        aria-pressed="${x.mark === mk.v}" title="${esc(T(mk.key))}">${mk.sym}</button>`).join('')}
+                  </div>
+                </div>
+                <div class="sk-extra-foot">
+                  <input class="sk-note" data-xfield="note" data-xi="${j}" value="${esc(x.note)}" placeholder="${esc(T('notePh'))}" maxlength="500" />
+                  <button type="button" class="sk-extra-del" data-act="extra-del" data-xi="${j}" title="${esc(T('extraDel'))}" aria-label="${esc(T('extraDel'))}">✕</button>
+                </div>
+              </li>`;
+          }).join('')}
+        </ol>
+        <button type="button" class="sk-btn sk-extra-add" data-act="extra-add">${T('extraAdd')}</button>
+      </section>`;
   }
 
   /* ---------- 預覽（A4 列印版面） ---------- */
@@ -371,6 +420,7 @@
         <div class="sk-pv-title">
           <b>${esc(T('pvTitle')(nameOf(d)))}</b>
           <span>${T('pvHint')}</span>
+          <span class="sk-pv-fit" hidden></span>
         </div>
         <label class="sk-pv-lang">${T('pvLang')}
           <select data-pv-lang>
@@ -427,6 +477,26 @@
         renderDialog();
         dlg.querySelector('.sk-dlg-body').scrollTop = top;
       };
+      /* --- 未儲存提醒：開啟時記下內容，關閉前比對 --- */
+      // 只比對會儲存的欄位；空白說明、空白自填列不算修改
+      function snapshot(d) {
+        const notes = Object.fromEntries(Object.entries(d.notes || {}).filter(([, v]) => String(v).trim()));
+        const extras = (d.extras || []).filter(x => !isBlankExtra(x));
+        return JSON.stringify([d.location, d.date, d.contractor, d.sub, d.timing, d.marks, notes, d.review, d.signs, extras]);
+      }
+      let openedSnapshot = null;
+      const isDirty = () => !!state.draft && snapshot(state.draft) !== openedSnapshot;
+      // 關閉填表視窗：有未儲存內容時先詢問，避免誤觸就遺失（電腦版常見）
+      function tryClose() {
+        if (isDirty() && !confirm(T('discardConfirm'))) return;
+        dlg.close();
+      }
+      // Esc 鍵：同樣先詢問
+      dlg.addEventListener('cancel', e => {
+        e.preventDefault();
+        tryClose();
+      });
+
       function showMsg(text) {
         const m = dlg.querySelector('.sk-dlg-msg');
         m.textContent = text;
@@ -518,8 +588,12 @@
           timing: [...f.timing],
           date: f.date || today(), // 新表單預設今天，可自行修改
           review: { status: null, date: '', title: '', ...f.review },
+          // 已填的自填項目，不足 3 列補空白列（空白列儲存時會略過）
+          extras: [...(f.extras || []).map(x => ({ ...blankExtra(), ...x })),
+            ...Array.from({ length: Math.max(0, EXTRA_ROWS - (f.extras || []).length) }, blankExtra)],
           signs: { ...f.signs },
         };
+        openedSnapshot = snapshot(state.draft);
         renderDialog();
         dlg.showModal();
         setupPads();
@@ -542,12 +616,15 @@
             version: d.version, location: d.location, date: d.date,
             contractor: d.contractor, sub: d.sub, timing: d.timing,
             marks: d.marks, notes: d.notes, review: d.review, signs: d.signs,
+            extras: d.extras.filter(x => !isBlankExtra(x))
+              .map(x => ({ name: x.name.trim(), std: x.std.trim(), mark: x.mark, note: x.note.trim() })),
           };
           const saved = decorate(await store$().saveForm(d.id, body));
           const i = state.forms.findIndex(f => f.id === saved.id);
           const { signs, ...summary } = saved;
           state.forms[i] = { ...summary, signed: Object.keys(signs) };
           dlg.close();
+          refresh(); // 直接更新清單，不只依賴 close 事件（背景分頁時瀏覽器可能延後觸發）
         } catch (e) {
           showMsg(e.message);
           btn.disabled = false;
@@ -561,6 +638,7 @@
         Object.assign(d, {
           contractor: '', sub: '', date: today(), timing: [],
           marks: d.marks.map(() => null), notes: {},
+          extras: Array.from({ length: EXTRA_ROWS }, blankExtra),
           review: { status: null, date: '', title: '' }, signs: {},
         });
         renderDialog();
@@ -575,6 +653,7 @@
           await store$().deleteForm(d.id);
           state.forms = state.forms.filter(f => f.id !== d.id);
           dlg.close();
+          refresh();
         } catch (e) {
           showMsg(e.message);
         }
@@ -590,17 +669,27 @@
         const scale = Math.min(1, (wrap.clientWidth - 24) / paper.offsetWidth);
         paper.style.zoom = scale < 1 ? scale.toFixed(3) : '';
       }
+      // 稍微超出一頁時自動縮成一頁（列印、PDF 都照這個版面），並在標題列顯示縮小比例
+      function layoutPaper() {
+        const paper = pvDlg.querySelector('.sk-paper');
+        paper.style.zoom = ''; // 量測前先還原螢幕縮放
+        const s = window.SelfCheckPrint.fitOnePage(paper);
+        const badge = pvDlg.querySelector('.sk-pv-fit');
+        badge.textContent = s < 1 ? T('pvFit')(Math.round(s * 100)) : '';
+        badge.hidden = s >= 1;
+        fitPaper();
+      }
       function openPreview() {
         pvDlg.innerHTML = previewHTML();
         pvDlg.showModal();
-        fitPaper();
+        layoutPaper();
       }
       window.addEventListener('resize', () => { if (pvDlg.open) fitPaper(); });
       pvDlg.addEventListener('change', e => {
         if (!e.target.matches('[data-pv-lang]')) return;
         store.set(PRINT_LANG_KEY, e.target.value);
         pvDlg.querySelector('.sk-paper').innerHTML = paperHTML();
-        fitPaper();
+        layoutPaper();
       });
       pvDlg.addEventListener('click', async e => {
         const b = e.target.closest('[data-pv]');
@@ -613,7 +702,7 @@
           b.disabled = true;
           b.textContent = T('pdfBusy');
           try {
-            await window.SelfCheckPrint.downloadPdf(pvDlg.querySelector('.pp-content'), pdfName(state.draft));
+            await window.SelfCheckPrint.downloadPdf(pvDlg.querySelector('.pp-fit'), pdfName(state.draft));
           } catch (err) {
             msg.textContent = err.message;
             msg.hidden = false;
@@ -675,7 +764,15 @@
       });
 
       dlg.addEventListener('click', e => {
-        if (e.target === dlg) { dlg.close(); return; } // 點背景關閉（不儲存）
+        if (e.target === dlg) return; // 點到視窗外不關閉（以前會直接關閉且不儲存，電腦版容易誤觸）
+        const xm = e.target.closest('[data-xmark]');
+        if (xm) {
+          const x = state.draft.extras[+xm.dataset.xi];
+          x.mark = x.mark === xm.dataset.xmark ? null : xm.dataset.xmark; // 再點一次取消
+          rerenderKeepScroll();
+          if (x.mark === 'x') dlg.querySelector(`.sk-note[data-xfield="note"][data-xi="${xm.dataset.xi}"]`).focus();
+          return;
+        }
         const mk = e.target.closest('[data-mark]');
         if (mk) {
           const i = +mk.dataset.i;
@@ -688,11 +785,22 @@
         const act = e.target.closest('[data-act]');
         if (!act) return;
         const a = act.dataset.act;
-        if (a === 'close') dlg.close();
+        if (a === 'close') tryClose();
         if (a === 'save') save(act);
         if (a === 'preview') openPreview();
         if (a === 'reset') reset();
         if (a === 'delete') remove();
+        if (a === 'extra-add') {
+          state.draft.extras.push(blankExtra());
+          rerenderKeepScroll();
+          const inputs = dlg.querySelectorAll('[data-xfield="name"]');
+          inputs[inputs.length - 1].focus();
+        }
+        if (a === 'extra-del') {
+          state.draft.extras.splice(+act.dataset.xi, 1);
+          if (!state.draft.extras.length) state.draft.extras.push(blankExtra()); // 至少留一列
+          rerenderKeepScroll();
+        }
         if (a === 'clear-sign') {
           const key = act.dataset.sign;
           delete state.draft.signs[key];
@@ -705,7 +813,8 @@
       dlg.addEventListener('input', e => {
         const t = e.target;
         const d = state.draft;
-        if (t.matches('.sk-note')) d.notes[t.dataset.i] = t.value;
+        if (t.dataset.xfield) d.extras[+t.dataset.xi][t.dataset.xfield] = t.value;
+        else if (t.matches('.sk-note')) d.notes[t.dataset.i] = t.value;
         else if (t.dataset.field) {
           const f = t.dataset.field;
           d[f] = t.value;

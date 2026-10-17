@@ -1236,16 +1236,32 @@
      "不妨礙其他工項進行"
     ],
     [
-     "材料規格",
-     "144.5*127mm(依照施工圖規格)"
+     "鋼軌樁材料進場（規格）",
+     "依施工圖規格：____ mm（高×寬，各工地自行填寫）"
+    ],
+    [
+     "鋼軌樁材料長度",
+     "L=12M"
+    ],
+    [
+     "鋼軌樁點位放樣（平面X、Y向依施工圖核對）",
+     "誤差≦10cm"
+    ],
+    [
+     "鋼軌豎立",
+     "@40CM，誤差≦10cm"
+    ],
+    [
+     "垂直度",
+     "因地質不同而異向基地外傾斜\n不得傾斜入結構體內"
     ],
     [
      "現場樁頂高程齊平",
      "誤差50mm以內(可順利拔樁為原則)"
     ],
     [
-     "平面X、Y向依施工圖核對",
-     "誤差100mm以內\n且不得傾斜入結構體內"
+     "鋼軌樁打設完成",
+     "符合圖說"
     ],
     [
      "露明部分",
@@ -1265,16 +1281,32 @@
       "Không cản trở các hạng mục khác"
      ],
      [
-      "Quy cách vật liệu",
-      "144,5*127mm (theo quy cách bản vẽ thi công)"
+      "Vật liệu cọc ray thép nhập công trường (quy cách)",
+      "Theo quy cách bản vẽ thi công: ____ mm (cao×rộng, mỗi công trường tự điền)"
+     ],
+     [
+      "Chiều dài vật liệu cọc ray thép",
+      "L=12M"
+     ],
+     [
+      "Định vị điểm cọc ray thép (đối chiếu phương X, Y trên mặt bằng với bản vẽ thi công)",
+      "Sai số ≦ 10cm"
+     ],
+     [
+      "Dựng ray thép",
+      "@40CM, sai số ≦ 10cm"
+     ],
+     [
+      "Độ thẳng đứng",
+      "Thay đổi tùy địa chất, nghiêng ra phía ngoài khu đất\nKhông được nghiêng vào trong kết cấu"
      ],
      [
       "Cao độ đầu cọc tại hiện trường bằng nhau",
       "Sai số trong phạm vi 50mm (nguyên tắc là nhổ cọc thuận lợi)"
      ],
      [
-      "Đối chiếu theo phương X, Y trên mặt bằng với bản vẽ thi công",
-      "Sai số trong phạm vi 100mm\nVà không được nghiêng vào trong kết cấu"
+      "Hoàn thành đóng cọc ray thép",
+      "Đúng bản vẽ"
      ],
      [
       "Phần lộ ra ngoài",
@@ -4053,6 +4085,261 @@
      ]
     ]
    }
+  },
+  "46": {
+   "category": "假設及基礎工程",
+   "title": "中間樁及構台樁施工自主檢查表",
+   "sub": "中間樁及構台樁工程",
+   "items": [
+    [
+     "中間樁材料長度",
+     "H350*350*12*19，L=11.5M"
+    ],
+    [
+     "構台樁材料長度",
+     "H350*350*12*19，L=11.5M"
+    ],
+    [
+     "中間樁點位放樣",
+     "誤差≦5cm"
+    ],
+    [
+     "中間樁打設深度",
+     "符合圖說"
+    ],
+    [
+     "垂直度",
+     "因地質不同而異"
+    ],
+    [
+     "構台樁打設深度",
+     "符合圖說"
+    ],
+    [
+     "構台樁續接",
+     "平整及滿銲"
+    ],
+    [
+     "接樁後垂直度",
+     "保持平整"
+    ],
+    [
+     "完成樁頂高程",
+     "符合圖說"
+    ]
+   ],
+   "vi": {
+    "title": "Phiếu tự kiểm tra thi công cọc trung gian và cọc sàn công tác",
+    "sub": "Công tác cọc trung gian và cọc sàn công tác",
+    "items": [
+     [
+      "Chiều dài vật liệu cọc trung gian",
+      "H350*350*12*19, L=11,5M"
+     ],
+     [
+      "Chiều dài vật liệu cọc sàn công tác",
+      "H350*350*12*19, L=11,5M"
+     ],
+     [
+      "Định vị điểm cọc trung gian",
+      "Sai số ≦ 5cm"
+     ],
+     [
+      "Chiều sâu đóng cọc trung gian",
+      "Đúng bản vẽ"
+     ],
+     [
+      "Độ thẳng đứng",
+      "Thay đổi tùy theo địa chất"
+     ],
+     [
+      "Chiều sâu đóng cọc sàn công tác",
+      "Đúng bản vẽ"
+     ],
+     [
+      "Nối cọc sàn công tác",
+      "Phẳng và hàn kín đầy"
+     ],
+     [
+      "Độ thẳng đứng sau khi nối cọc",
+      "Giữ phẳng"
+     ],
+     [
+      "Cao độ đỉnh cọc hoàn thành",
+      "Đúng bản vẽ"
+     ]
+    ]
+   }
+  },
+  "47": {
+   "category": "假設及基礎工程",
+   "title": "構台施工自主檢查表",
+   "sub": "構台工程",
+   "items": [
+    [
+     "型鋼材料進場",
+     "主樑 H400*400*13*21\n副樑 H350*350*12*19"
+    ],
+    [
+     "覆工板材料進場",
+     "MD-200×100×20"
+    ],
+    [
+     "構台高程",
+     "依設計圖說，並不影響第一層支撐架設"
+    ],
+    [
+     "構台主副樑架設",
+     "符合設計圖說"
+    ],
+    [
+     "覆工板架設",
+     "符合設計圖說"
+    ],
+    [
+     "覆工鈑固定",
+     "角鐵擋燒焊"
+    ],
+    [
+     "安全欄杆設置",
+     "依勞工安全規定設置"
+    ]
+   ],
+   "vi": {
+    "title": "Phiếu tự kiểm tra thi công sàn công tác",
+    "sub": "Công tác sàn công tác",
+    "items": [
+     [
+      "Thép hình vật liệu nhập công trường",
+      "Dầm chính H400*400*13*21\nDầm phụ H350*350*12*19"
+     ],
+     [
+      "Tấm sàn phủ (tấm lót đường) nhập công trường",
+      "MD-200×100×20"
+     ],
+     [
+      "Cao độ sàn công tác",
+      "Theo bản vẽ thiết kế, không ảnh hưởng việc lắp đặt thanh chống tầng thứ nhất"
+     ],
+     [
+      "Lắp dựng dầm chính, dầm phụ sàn công tác",
+      "Đúng bản vẽ thiết kế"
+     ],
+     [
+      "Lắp đặt tấm sàn phủ",
+      "Đúng bản vẽ thiết kế"
+     ],
+     [
+      "Cố định tấm sàn phủ",
+      "Hàn thép góc chặn"
+     ],
+     [
+      "Lắp đặt lan can an toàn",
+      "Lắp đặt theo quy định an toàn lao động"
+     ]
+    ]
+   }
+  },
+  "48": {
+   "category": "假設及基礎工程",
+   "title": "水平支撐施工自主檢查表",
+   "sub": "水平支撐工程",
+   "items": [
+    [
+     "水平支撐材料規格",
+     "H350*350*12*19"
+    ],
+    [
+     "三角托架高程放樣",
+     "誤差≦5cm"
+    ],
+    [
+     "三角托架固定",
+     "需鎖固"
+    ],
+    [
+     "支撐安裝軸線",
+     "需無歪斜"
+    ],
+    [
+     "支撐與支撐接合處",
+     "需以連接鈑及螺栓接合"
+    ],
+    [
+     "圍苓吊放水平度",
+     "≦5cm"
+    ],
+    [
+     "圍苓與支撐接合",
+     "是否補強、緊固"
+    ],
+    [
+     "圍苓與鋼鈑樁接觸面",
+     "使用fc'280kgf/cm2背填"
+    ],
+    [
+     "支撐與中間樁三角架",
+     "U型螺栓接合"
+    ],
+    [
+     "土壓計及油壓計設置位置及固定方式",
+     "依設計圖說"
+    ],
+    [
+     "土壓計及支撐應變計之觀測",
+     "依監測警戒值管理"
+    ]
+   ],
+   "vi": {
+    "title": "Phiếu tự kiểm tra thi công thanh chống ngang",
+    "sub": "Công tác thanh chống ngang",
+    "items": [
+     [
+      "Quy cách vật liệu thanh chống ngang",
+      "H350*350*12*19"
+     ],
+     [
+      "Định vị cao độ giá đỡ tam giác",
+      "Sai số ≦ 5cm"
+     ],
+     [
+      "Cố định giá đỡ tam giác",
+      "Phải bắt bu lông chắc chắn"
+     ],
+     [
+      "Trục lắp đặt thanh chống",
+      "Không được lệch, nghiêng"
+     ],
+     [
+      "Chỗ nối giữa các thanh chống",
+      "Phải nối bằng bản mã và bu lông"
+     ],
+     [
+      "Độ ngang bằng khi cẩu lắp dầm vành (wale)",
+      "≦ 5cm"
+     ],
+     [
+      "Liên kết dầm vành với thanh chống",
+      "Đã gia cường, siết chặt chưa"
+     ],
+     [
+      "Mặt tiếp xúc dầm vành với cọc ván thép",
+      "Chèn lấp phía sau bằng bê tông fc'280kgf/cm2"
+     ],
+     [
+      "Thanh chống với giá tam giác cọc trung gian",
+      "Liên kết bằng bu lông chữ U"
+     ],
+     [
+      "Vị trí lắp đặt và cách cố định áp kế đất, áp kế dầu",
+      "Theo bản vẽ thiết kế"
+     ],
+     [
+      "Quan trắc áp kế đất và đồng hồ đo biến dạng thanh chống",
+      "Quản lý theo giá trị cảnh báo quan trắc"
+     ]
+    ]
+   }
   }
  },
  "viCategories": {
@@ -4066,5 +4353,20 @@
   "金屬工程": "Công tác kim loại",
   "機電設備工程": "Cơ điện & thiết bị",
   "景觀工程": "Công tác cảnh quan"
- }
+ },
+ "migrations": [
+  {
+   "template": "23",
+   "fromItems": 6,
+   "map": [
+    0,
+    1,
+    2,
+    7,
+    4,
+    9
+   ],
+   "note": "2026-10-17 併入原 49 號鋼軌樁施工自主檢查表"
+  }
+ ]
 }

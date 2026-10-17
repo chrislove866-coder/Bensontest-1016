@@ -78,8 +78,24 @@
     current = await kvGet('current');
     if (!projects.length) await addProject('我的工地');
     if (!projects.some(p => p.id === current)) await setCurrent(projects[0].id);
+    const all = await templates();
+    const tpl = all.templates;
+    // 範本調整（例如 2026-10-17 把 49 號併入 23 號）：依 migrations 把舊表單的標記搬到新位置
+    for (const m of all.migrations || []) {
+      const stale = (await tx(['forms'], 'readonly', t => req(t.objectStore('forms').getAll())))
+        .filter(f => f.template === m.template && f.marks.length === m.fromItems);
+      if (!stale.length || !tpl[m.template]) continue;
+      const n = tpl[m.template].items.length;
+      await tx(['forms'], 'readwrite', t => stale.forEach(f => {
+        const marks = Array(n).fill(null), notes = {};
+        m.map.forEach((to, from) => {
+          marks[to] = f.marks[from];
+          if (f.notes && f.notes[from] != null) notes[to] = f.notes[from];
+        });
+        t.objectStore('forms').put({ ...f, marks, notes });
+      }));
+    }
     // 範本新增後（例如 46 號），每個工地補上該範本的空白表
-    const tpl = (await templates()).templates;
     for (const p of projects) {
       const have = new Set((await formsOf(p.id)).map(f => f.template));
       const missing = Object.keys(tpl).sort().filter(t => !have.has(t));
@@ -153,7 +169,10 @@
   window.SK_STORE = {
     templates,
     async listForms() {
-      return (await formsOf(current)).map(({ signs, ...f }) => ({ ...f, signed: Object.keys(signs || {}) }));
+      const tpl = (await templates()).templates;
+      return (await formsOf(current))
+        .filter(f => tpl[f.template]) // 已移除的範本（例如併入其他表）不顯示
+        .map(({ signs, ...f }) => ({ ...f, signed: Object.keys(signs || {}) }));
     },
     async getForm(id) {
       const f = await tx(['forms'], 'readonly', t => req(t.objectStore('forms').get(id)));
@@ -163,7 +182,7 @@
     async saveForm(id, body) {
       const f = await this.getForm(id);
       if (!body.date) throw new Error('請填寫檢查日期');
-      const fields = ['location', 'date', 'contractor', 'sub', 'timing', 'marks', 'notes', 'review', 'signs'];
+      const fields = ['location', 'date', 'contractor', 'sub', 'timing', 'marks', 'notes', 'review', 'signs', 'extras'];
       fields.forEach(k => { f[k] = body[k]; });
       f.version += 1;
       f.updatedAt = now();

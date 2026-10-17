@@ -838,6 +838,22 @@ button { font: inherit; cursor: pointer; }
 .sk-item-no { color: var(--sk-doing); margin-right: 6px; font-size: 13px; }
 .sk-item-std { margin-top: 4px; font-size: 12px; color: #6b7280; white-space: pre-line; }
 .sk-item.is-cont .sk-item-name { font-weight: 400; color: #6b7280; font-size: 14px; }
+/* 其他檢查項目（自行填寫） */
+.sk-extras-hint { margin-top: -4px; font-size: 12px; color: var(--muted); }
+.sk-extras .sk-item-main { align-items: center; }
+.sk-extra .sk-item-no { align-self: flex-start; margin-top: 9px; color: var(--sk-doing); font-size: 13px; font-weight: 700; }
+.sk-extra-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.sk-extra-fields input {
+  width: 100%; padding: 7px 10px; font: inherit; font-size: 14px; color: var(--text);
+  background: #fff; border: 1px solid #d9dde4; border-radius: 6px;
+}
+.sk-extra-fields input[data-xfield="name"] { font-weight: 700; }
+.sk-extra-fields input:focus, .sk-extra-foot input:focus { outline: 2px solid #ddd0fb; border-color: var(--sk-accent); }
+.sk-extra-foot { display: flex; align-items: flex-start; gap: 6px; }
+.sk-extra-foot .sk-note { flex: 1; }
+.sk-extra-del { flex-shrink: 0; width: 34px; height: 34px; margin-top: 10px; font-size: 14px; color: var(--muted); background: #fff; border: 1px solid #d9dde4; border-radius: 6px; }
+.sk-extra-del:hover { color: var(--sk-fail); border-color: #f6c4c4; }
+.sk-extra-add { align-self: flex-start; color: var(--sk-accent); border-style: dashed; }
 .sk-marks { display: flex; gap: 4px; flex-shrink: 0; }
 .sk-mark {
   --c: #9aa3af;
@@ -917,6 +933,7 @@ button { font: inherit; cursor: pointer; }
 .sk-pv-title { flex: 1; min-width: 160px; display: flex; flex-direction: column; }
 .sk-pv-title b { font-size: 15px; }
 .sk-pv-title span { font-size: 12px; color: var(--muted); }
+.sk-pv-title .sk-pv-fit { align-self: flex-start; margin-top: 2px; padding: 1px 8px; color: #1d7a2a; background: #e8f7ea; border-radius: 10px; }
 .sk-pv-msg { margin: 10px 16px 0; padding: 8px 12px; font-size: 13px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; }
 .sk-pv-wrap { flex: 1; overflow: auto; padding: 20px 12px 40px; }
 .sk-paper {
@@ -967,7 +984,7 @@ button { font: inherit; cursor: pointer; }
   body.sk-printing { background: #fff; }
   body.sk-printing > *:not(#skPrintRoot) { display: none !important; }
   body.sk-printing #skPrintRoot { display: block; }
-  #skPrintRoot .pp-content { width: 100%; }
+  /* 列印時維持與預覽相同的 190mm 寬，自動縮成一頁的比例才會一致 */
   #skPrintRoot .pp-table th { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
 

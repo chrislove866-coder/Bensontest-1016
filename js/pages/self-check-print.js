@@ -4,10 +4,12 @@
  *     form：填寫內容（可用草稿，含未儲存的修改）
  *     tpl ：範本 { title, sub, items, vi: { title, sub, items } }
  *     ctx ：{ company, project, lang }   lang：'zh' 中文／'vi' 越南文／'bi' 中越對照
+ *   SelfCheckPrint.fitOnePage(scope)          稍微超出一頁（15% 內）時等比例縮小成一頁，回傳比例
  *   SelfCheckPrint.print(paperEl)             只列印這張紙
  *   SelfCheckPrint.downloadPdf(contentEl, filename)  產生 PDF 檔下載（html2pdf.js，內建於 js/vendor）
  *
- * 公司名稱為專有名詞，各語言都顯示中文；使用者手填的內容（廠商、位置、實際檢查情形）照原樣顯示。
+ * 公司名稱為專有名詞，各語言都顯示中文；使用者手填的內容（廠商、位置、實際檢查情形、
+ * 其他檢查項目 form.extras）照原樣顯示，接在範本檢查項目之後。
  */
 (function () {
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -95,12 +97,25 @@
             <td class="pp-mark">${SYMBOL[form.marks[i]] || ''}</td>
           </tr>`);
       }
+      // 其他檢查項目（使用者自行填寫，對應 Word 範本最後的空白列）：內容照原樣顯示
+      // 填表畫面為了方便輸入會補空白列，列印時略過完全空白的列
+      const filled = x => [x.name, x.std, x.note].some(v => String(v || '').trim()) || x.mark;
+      (form.extras || []).filter(filled).forEach(x => {
+        rows.push(`
+          <tr class="pp-item pp-extra">
+            <td class="pp-name">${nl(x.name)}</td>
+            <td>${nl(x.std)}</td>
+            <td>${nl(x.note)}</td>
+            <td class="pp-mark">${SYMBOL[x.mark] || ''}</td>
+          </tr>`);
+      });
       return rows.join('');
     }
 
     const rv = form.review || {};
     const company = (ctx.company || '').split('').join(' ');
-    return `
+    // .pp-fit：自動縮成一頁用的外框（見 fitOnePage）
+    return `<div class="pp-fit">
       <div class="pp-content pp-lang-${lang}">
         <div class="pp-company">${esc(company)}</div>
         <div class="pp-title">${pick(tpl.title, vi.title)}</div>
@@ -143,14 +158,37 @@
           <div>${lb('signManager')}${sign(form.signs.manager)}</div>
           <div>${lb('signWorker')}${sign(form.signs.worker)}</div>
         </div>
-      </div>`;
+      </div></div>`;
+  }
+
+  /* ---------- 自動縮成一頁 ---------- */
+  // A4 扣掉上下邊界的可用高度（與 PDF 邊界 10/12mm、列印邊界 10mm 一致，取較嚴格者）
+  const PAGE_MM = 275;
+  const PX_PER_MM = 96 / 25.4;
+  const MAX_SHRINK = 0.15; // 超出 15% 以內才縮小（最小約 87%），超出更多就照常分頁
+  // 版面須已放進畫面且未被縮放（預覽的 zoom 要先還原）；回傳縮放比例，1 = 未縮小
+  function fitOnePage(scope) {
+    const wrap = scope.querySelector('.pp-fit');
+    const c = wrap && wrap.querySelector('.pp-content');
+    if (!c) return 1;
+    c.style.transform = c.style.transformOrigin = c.style.marginLeft = '';
+    wrap.style.height = wrap.style.overflow = '';
+    const h = c.offsetHeight / PX_PER_MM;
+    if (h <= PAGE_MM || h > PAGE_MM * (1 + MAX_SHRINK)) return 1;
+    const s = (PAGE_MM - 1) / h; // 留 1mm 餘裕
+    c.style.transformOrigin = 'top left';
+    c.style.transform = `scale(${s.toFixed(4)})`;
+    c.style.marginLeft = `${((c.offsetWidth / PX_PER_MM) * (1 - s)) / 2}mm`; // 縮小後置中
+    wrap.style.height = `${h * s}mm`;
+    wrap.style.overflow = 'hidden';
+    return s;
   }
 
   // 列印：把紙張複製到 body 最外層，列印時隱藏其他所有內容
   function print(paperEl) {
     const root = document.createElement('div');
     root.id = 'skPrintRoot';
-    root.innerHTML = paperEl.querySelector('.pp-content').outerHTML;
+    root.innerHTML = paperEl.querySelector('.pp-fit').outerHTML; // 連同自動縮小的設定一起列印
     document.body.appendChild(root);
     document.body.classList.add('sk-printing');
     const done = () => {
@@ -189,5 +227,5 @@
     }).from(contentEl).save();
   }
 
-  window.SelfCheckPrint = { paperHTML, print, downloadPdf };
+  window.SelfCheckPrint = { paperHTML, fitOnePage, print, downloadPdf };
 })();

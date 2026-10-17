@@ -3,7 +3,7 @@
  * 第一次開啟時把所有檔案存到裝置，之後沒有網路也能開啟。
  * VERSION 由 tools/build_offline.py 依檔案內容自動更新；版本變了會換新快取。
  */
-const VERSION = '3caf74b82a';
+const VERSION = 'a138d0963d';
 const CACHE = `selfcheck-offline-${VERSION}`;
 const FILES = [
   './',
@@ -23,7 +23,10 @@ const FILES = [
 ];
 
 self.addEventListener('install', e => {
-  e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
+  // cache: 'reload'：略過瀏覽器的 HTTP 快取，確保存下的是網站上的最新檔案
+  // （否則新版本可能存到舊檔，例如 GitHub Pages 允許瀏覽器暫存 10 分鐘）
+  const fresh = FILES.map(f => new Request(f, { cache: 'reload' }));
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(fresh)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', e => {
