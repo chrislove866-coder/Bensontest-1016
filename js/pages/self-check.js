@@ -661,18 +661,25 @@
 
       /* --- 預覽／列印／PDF --- */
       // 紙張固定 A4 寬，螢幕較窄時等比例縮小
+      // 用 transform 縮小外觀而不是 CSS zoom：版面仍以原尺寸計算，
+      // iPhone Safari 才不會把「看起來很小」的字自動放大（會造成字體不一、文字重疊）
       function fitPaper() {
         const wrap = pvDlg.querySelector('.sk-pv-wrap');
         const paper = pvDlg.querySelector('.sk-paper');
         if (!wrap || !paper) return;
-        paper.style.zoom = '';
-        const scale = Math.min(1, (wrap.clientWidth - 24) / paper.offsetWidth);
-        paper.style.zoom = scale < 1 ? scale.toFixed(3) : '';
+        paper.style.transform = paper.style.transformOrigin = paper.style.marginLeft = paper.style.marginBottom = '';
+        const avail = wrap.clientWidth - 24;
+        const scale = Math.min(1, avail / paper.offsetWidth);
+        if (scale >= 1) return;
+        paper.style.transformOrigin = 'top left';
+        paper.style.transform = `scale(${scale.toFixed(4)})`;
+        paper.style.marginLeft = `${(wrap.clientWidth - paper.offsetWidth * scale) / 2 - 12}px`; // 置中（扣掉左右留白）
+        paper.style.marginBottom = `${-paper.offsetHeight * (1 - scale)}px`;                   // 收回縮小後多出的空白
       }
       // 稍微超出一頁時自動縮成一頁（列印、PDF 都照這個版面），並在標題列顯示縮小比例
       function layoutPaper() {
         const paper = pvDlg.querySelector('.sk-paper');
-        paper.style.zoom = ''; // 量測前先還原螢幕縮放
+        paper.style.transform = ''; // 量測前先還原螢幕縮放（offsetHeight 本來就不受 transform 影響，這裡只是保險）
         const s = window.SelfCheckPrint.fitOnePage(paper);
         const badge = pvDlg.querySelector('.sk-pv-fit');
         badge.textContent = s < 1 ? T('pvFit')(Math.round(s * 100)) : '';
