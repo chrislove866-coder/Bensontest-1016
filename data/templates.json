@@ -2528,7 +2528,7 @@
      ],
      [
       "Ống nối vào hộp nối dây cạnh cột",
-      "Phải nằm phía trong cốt đai cột"
+      "Phải nằm phía trong đai cột"
      ],
      [
       "Ống nối vào hộp nối dây cạnh cột",
@@ -3175,12 +3175,12 @@
       "Theo bảng thống kê thép lập từ bản vẽ kết cấu"
      ],
      [
-      "Kiểm tra đường kính, kiểu dáng, khoảng cách cốt đai cột",
+      "Kiểm tra đường kính, kiểu dáng, khoảng cách đai cột",
       "Theo bảng thống kê thép lập từ bản vẽ kết cấu"
      ],
      [
-      "Cách bố trí, buộc cốt đai",
-      "Cốt đai bố trí theo 4 hướng, buộc từng mắt bằng dây thép #22"
+      "Cách bố trí và buộc thép đai",
+      "Thép đai bố trí theo 4 hướng, buộc từng mắt bằng dây thép #22"
      ],
      [
       "Số hiệu, số thanh, kiểu dáng, cách bố trí thép giằng",
@@ -3196,7 +3196,7 @@
      ],
      [
       "Khớp nối ren của các thanh thép liền kề phải so le nhau",
-      "Ngoài vùng bó cốt đai từ 60cm trở lên"
+      "Ngoài vùng bó đai cột từ 60cm trở lên"
      ],
      [
       "Lực siết khớp nối ren",
@@ -3321,7 +3321,7 @@
       "#8: lớp trên 202cm, lớp dưới 155cm\n#10: lớp trên 256cm, lớp dưới 197cm"
      ],
      [
-      "Đường kính, kiểu dáng, khoảng cách cốt đai",
+      "Đường kính, kiểu dáng, khoảng cách đai dầm",
       ""
      ],
      [
