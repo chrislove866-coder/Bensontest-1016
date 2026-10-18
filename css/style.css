@@ -24,6 +24,9 @@
 
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
+/* 關閉 iPhone Safari／手機瀏覽器的「自動放大文字」：預覽把 A4 縮小顯示時，
+   Safari 會把寬格子裡的字自行放大，造成表格字體大小不一、版面撐高被切掉 */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 body {
   font-family: "Noto Sans TC", "Microsoft JhengHei", "PingFang TC", system-ui, sans-serif;
   color: var(--text);
