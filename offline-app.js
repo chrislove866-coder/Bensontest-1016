@@ -1,8 +1,9 @@
 /**
  * 自主檢查表離線版：外框邏輯
  *   - 載入共用的自主檢查表畫面（PAGES['self-check']）
- *   - 工地（工程名稱）切換、新增／改名／刪除
- *   - 備份匯出（下載 .json）／匯入
+ *   - 公司名稱（印在表頭，可空白）；工地（工程名稱）切換、新增／改名／刪除
+ *   - 自訂範本：自己新增、修改、刪除整份檢查表（或複製現有範本再改）
+ *   - 備份匯出（下載 .json）／匯入；有填寫內容超過 7 天沒備份時提醒
  *   - 註冊 Service Worker，讓第一次開啟後沒有網路也能使用
  */
 (function () {
@@ -36,9 +37,17 @@
     return `
       <div class="pj-box">
         <div class="pj-head">
-          <h3>工地（工程名稱）</h3>
+          <h3>公司與工地</h3>
           <button class="sk-dlg-x" data-x aria-label="關閉">✕</button>
         </div>
+        <form class="pj-company" data-company>
+          <label for="olCompany">公司名稱（印在檢查表最上方，可空白）</label>
+          <div class="pj-row">
+            <input id="olCompany" name="company" value="${esc(O.company())}" placeholder="例如：○○營造有限公司" maxlength="40" />
+            <button class="ac-save" type="submit">儲存</button>
+          </div>
+        </form>
+        <h4 class="pj-sub">工地（工程名稱）</h4>
         <p class="pj-hint">工地名稱會印在檢查表的「工程名稱」。每個工地各有一整套檢查表。</p>
         <ul class="pj-list">
           ${list.map(p => `
@@ -100,6 +109,8 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    await O.markBackedUp();
+    checkRemind();
     return `已匯出 ${data.forms.filter(f => f.version > 0).length} 份已填寫的檢查表（共 ${data.projects.length} 個工地）`;
   }
   fileInput.addEventListener('change', async () => {
@@ -109,7 +120,7 @@
     let msg;
     try {
       const r = await O.importBackup(JSON.parse(await file.text()));
-      msg = `已匯入 ${r.projects} 個工地、${r.forms} 份檢查表`;
+      msg = `已匯入 ${r.projects} 個工地、${r.forms} 份檢查表${r.templates ? `、${r.templates} 份自訂範本` : ''}`;
       renderSelect();
       showPage();
     } catch (e) {
@@ -150,8 +161,219 @@
   });
   dlg.addEventListener('submit', e => {
     e.preventDefault();
+    if (e.target.matches('[data-company]')) {
+      const name = e.target.company.value.trim();
+      run(() => O.setCompany(name), name ? `公司名稱已改為「${name}」` : '公司名稱已清空，表頭會留白');
+      return;
+    }
     const name = e.target.name.value.trim();
     run(async () => { const p = await O.addProject(name); await O.setCurrent(p.id); }, `已新增「${name}」`);
+  });
+
+  /* ---------- 超過 7 天沒備份提醒 ---------- */
+  const remindEl = document.getElementById('olRemind');
+  const backupBtn = document.getElementById('olBackup');
+  let remindLater = false; // 按「稍後」：這次開啟不再跳出提醒列（備份按鈕仍顯示紅點）
+  async function checkRemind() {
+    let due = null;
+    try { if (ready) due = await O.backupDue(); } catch (e) {}
+    backupBtn.classList.toggle('ol-btn-alert', !!due);
+    remindEl.hidden = !due || remindLater || location.hash !== '#/self-check';
+    if (due) {
+      document.getElementById('olRemindText').textContent = due.never
+        ? `⚠ 檢查表已經填了 ${due.days} 天，還沒備份過。手機遺失或換手機會找不回來，建議匯出備份檔。`
+        : `⚠ 已經 ${due.days} 天沒備份了，建議匯出備份檔，存到電腦或雲端硬碟。`;
+    }
+  }
+  remindEl.addEventListener('click', e => {
+    const b = e.target.closest('[data-remind]');
+    if (!b) return;
+    if (b.dataset.remind === 'backup') backupBtn.click();
+    else { remindLater = true; remindEl.hidden = true; }
+  });
+  // 填表視窗關閉（可能剛儲存）時重新檢查；dialog 的 close 事件不會往上傳，要用捕獲階段
+  content.addEventListener('close', () => checkRemind(), true);
+
+  /* ---------- 自訂範本：自己新增整份檢查表 ---------- */
+  const tpDlg = document.getElementById('olTpl');
+  let ed = null;   // 編輯中的範本 { id（新增時空白）, category, title, sub, items: [[檢查項目, 管理標準]] }
+  let edSnap = '';
+  let cats = [];   // 工作類別（給輸入框的建議清單）
+  const edDirty = () => !!ed && JSON.stringify(ed) !== edSnap;
+
+  async function showList(msg = '') {
+    ed = null;
+    const all = await O.templates();
+    const mine = O.customTemplates();
+    const ids = Object.keys(mine).sort();
+    const every = Object.keys(all.templates).sort();
+    tpDlg.innerHTML = `
+      <div class="tp-box">
+        <div class="pj-head">
+          <h3>📋 檢查表範本</h3>
+          <button class="sk-dlg-x" data-tp="close" aria-label="關閉">✕</button>
+        </div>
+        <p class="pj-hint">自己新增的範本會出現在每個工地的檢查表清單。內建範本不能改，可以「複製」一份再修改。</p>
+        <h4 class="pj-sub">我的範本（${ids.length}）</h4>
+        ${ids.length ? `<ul class="tp-list">${ids.map(id => `
+          <li>
+            <div><b>${esc(mine[id].title)}</b><small>${esc(mine[id].category)}・${mine[id].items.length} 項</small></div>
+            <button class="ac-save" data-tp="edit" data-id="${id}">修改</button>
+            <button class="ac-del" data-tp="delete" data-id="${id}">刪除</button>
+          </li>`).join('')}</ul>` : '<div class="tp-empty">還沒有自訂範本</div>'}
+        <button class="sk-fill tp-new" data-tp="new">＋ 新增空白範本</button>
+        <div class="tp-copy">
+          <label for="tpCopyFrom">或從現有範本複製一份再修改：</label>
+          <div class="pj-row">
+            <select id="tpCopyFrom">
+              ${all.categories.map(c => `
+                <optgroup label="${esc(c)}">
+                  ${every.filter(id => all.templates[id].category === c)
+                    .map(id => `<option value="${id}">${esc(all.templates[id].title)}</option>`).join('')}
+                </optgroup>`).join('')}
+            </select>
+            <button class="ac-save" data-tp="copy">複製</button>
+          </div>
+        </div>
+        <div class="pj-msg" ${msg ? '' : 'hidden'}>${esc(msg)}</div>
+      </div>`;
+  }
+
+  function renderEditor(msg = '') {
+    const box = tpDlg.querySelector('.tp-box');
+    const top = box ? box.scrollTop : 0;
+    tpDlg.innerHTML = `
+      <div class="tp-box tp-edit">
+        <div class="pj-head">
+          <h3>${ed.id ? '修改範本' : '新增範本'}</h3>
+          <button class="sk-dlg-x" data-tp="back" aria-label="返回範本清單">✕</button>
+        </div>
+        <div class="tp-fields">
+          <label>工作類別
+            <input data-ed="category" value="${esc(ed.category)}" list="tpCats" maxlength="20" placeholder="選現有的類別，或自己取新的" />
+          </label>
+          <datalist id="tpCats">${cats.map(c => `<option value="${esc(c)}"></option>`).join('')}</datalist>
+          <label>檢查表名稱
+            <input data-ed="title" value="${esc(ed.title)}" maxlength="60" placeholder="例如：屋頂防水施工自主檢查表" />
+          </label>
+          <label>分項工程名稱（印在表上，可空白）
+            <input data-ed="sub" value="${esc(ed.sub)}" maxlength="60" placeholder="例如：防水工程" />
+          </label>
+        </div>
+        <h4 class="pj-sub">檢查項目（${ed.items.length}）</h4>
+        <p class="pj-hint">空白的項目不會儲存。同一個檢查項目有好幾條標準時，檢查項目填一樣的字，列印時會合併成一格。</p>
+        <ol class="tp-items">
+          ${ed.items.map(([name, std], i) => `
+            <li>
+              <span class="tp-no">${i + 1}.</span>
+              <div class="tp-item-fields">
+                <textarea data-it="0" data-i="${i}" rows="1" maxlength="200" placeholder="檢查項目">${esc(name)}</textarea>
+                <textarea data-it="1" data-i="${i}" rows="2" maxlength="300" placeholder="管理標準（例如：誤差 5mm 以內）">${esc(std)}</textarea>
+              </div>
+              <div class="tp-item-btns">
+                <button data-tp="up" data-i="${i}" ${i === 0 ? 'disabled' : ''} aria-label="往上移">↑</button>
+                <button data-tp="down" data-i="${i}" ${i === ed.items.length - 1 ? 'disabled' : ''} aria-label="往下移">↓</button>
+                <button data-tp="del-item" data-i="${i}" aria-label="刪除此項">✕</button>
+              </div>
+            </li>`).join('')}
+        </ol>
+        <button class="sk-btn" data-tp="add-item">＋ 新增一項</button>
+        <div class="pj-msg" ${msg ? '' : 'hidden'}>${esc(msg)}</div>
+        <div class="tp-actions">
+          <button class="sk-btn" data-tp="back">取消</button>
+          <button class="sk-btn sk-btn-primary" data-tp="save">💾 儲存範本</button>
+        </div>
+      </div>`;
+    tpDlg.querySelector('.tp-box').scrollTop = top;
+  }
+  async function startEdit(id, src) {
+    cats = (await O.templates()).categories;
+    ed = { id, category: src.category, title: src.title, sub: src.sub || '', items: src.items.map(([n, s]) => [n, s || '']) };
+    edSnap = JSON.stringify(ed);
+    renderEditor();
+    tpDlg.querySelector('.tp-box').scrollTop = 0;
+    if (!ed.title) tpDlg.querySelector('[data-ed="category"]').focus();
+  }
+  function leaveEditor() {
+    if (edDirty() && !confirm('範本還沒儲存，確定要離開嗎？\n\n要保留內容請按「取消」，再按「💾 儲存範本」。')) return;
+    showList();
+  }
+  async function saveEditor(btn) {
+    const changed = JSON.stringify(ed.items) !== JSON.stringify(JSON.parse(edSnap).items);
+    if (ed.id && changed) {
+      const n = await O.templateUsage(ed.id);
+      if (n && !confirm(`已有 ${n} 份填寫過的「${JSON.parse(edSnap).title}」。\n\n舊紀錄的標記會照項目順序保留：刪掉或調換順序的話，舊的標記可能對到別的項目。建議先匯出備份。\n\n確定要儲存嗎？`)) return;
+    }
+    btn.disabled = true;
+    try {
+      await O.saveTemplate(ed.id, ed);
+      const title = ed.title.trim();
+      const isNew = !ed.id;
+      showPage();
+      await showList(isNew ? `已新增「${title}」，每個工地的檢查表清單都加上了這份` : `已儲存「${title}」`);
+    } catch (e) {
+      btn.disabled = false;
+      renderEditor(e.message);
+    }
+  }
+
+  document.getElementById('olTemplates').addEventListener('click', async () => {
+    await showList();
+    tpDlg.showModal();
+  });
+  // Esc：編輯中先詢問；點視窗外面不關閉（避免誤觸遺失內容）
+  tpDlg.addEventListener('cancel', e => {
+    e.preventDefault();
+    if (ed) leaveEditor(); else tpDlg.close();
+  });
+  tpDlg.addEventListener('click', async e => {
+    const b = e.target.closest('[data-tp]');
+    if (!b) return;
+    const a = b.dataset.tp;
+    const i = +b.dataset.i;
+    const all = await O.templates();
+    if (a === 'close') tpDlg.close();
+    if (a === 'back') leaveEditor();
+    if (a === 'new') startEdit('', { category: '', title: '', sub: '', items: [['', ''], ['', ''], ['', '']] });
+    if (a === 'copy') {
+      const t = all.templates[tpDlg.querySelector('#tpCopyFrom').value];
+      startEdit('', { ...t, title: `${t.title}（自訂）` });
+    }
+    if (a === 'edit') startEdit(b.dataset.id, O.customTemplates()[b.dataset.id]);
+    if (a === 'delete') {
+      const t = O.customTemplates()[b.dataset.id];
+      const n = await O.templateUsage(b.dataset.id);
+      const warn = n
+        ? `\n\n⚠ 已有 ${n} 份填寫過的「${t.title}」，會一起刪除且無法復原。建議先匯出備份。`
+        : '\n\n各工地裡這份還沒填寫的空白表也會一起移除。';
+      if (!confirm(`確定刪除範本「${t.title}」？${warn}`)) return;
+      await O.deleteTemplate(b.dataset.id);
+      showPage();
+      showList(`已刪除「${t.title}」`);
+    }
+    if (a === 'save') saveEditor(b);
+    if (a === 'add-item') {
+      ed.items.push(['', '']);
+      renderEditor();
+      const boxes = tpDlg.querySelectorAll('[data-it="0"]');
+      boxes[boxes.length - 1].focus();
+    }
+    if (a === 'del-item') {
+      ed.items.splice(i, 1);
+      if (!ed.items.length) ed.items.push(['', '']); // 至少留一項
+      renderEditor();
+    }
+    if (a === 'up' || a === 'down') {
+      const j = a === 'up' ? i - 1 : i + 1;
+      [ed.items[i], ed.items[j]] = [ed.items[j], ed.items[i]];
+      renderEditor();
+    }
+  });
+  tpDlg.addEventListener('input', e => {
+    const t = e.target;
+    if (!ed) return;
+    if (t.dataset.ed) ed[t.dataset.ed] = t.value;
+    if (t.dataset.it) ed.items[+t.dataset.i][+t.dataset.it] = t.value;
   });
 
   /* ---------- 離線快取 ---------- */
@@ -179,6 +401,7 @@
     content.hidden = !tool;
     if (tool && !toolShown) showPage();
     toolShown = tool;
+    checkRemind();
     if (!tool) document.title = '酪梨營造工具箱';
     window.scrollTo(0, 0);
   }

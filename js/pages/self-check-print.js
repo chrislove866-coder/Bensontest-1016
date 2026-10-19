@@ -1,5 +1,5 @@
 /**
- * 自主檢查表：列印／PDF 用的 A4 版面（依騰鐿營造 Word 範本的表格格式）
+ * 自主檢查表：列印／PDF 用的 A4 版面（依公司 Word 範本的表格格式）
  *   SelfCheckPrint.paperHTML(form, tpl, ctx)  回傳 A4 頁面 HTML
  *     form：填寫內容（可用草稿，含未儲存的修改）
  *     tpl ：範本 { title, sub, items, vi: { title, sub, items } }

@@ -961,7 +961,7 @@ button { font: inherit; cursor: pointer; }
 .pp-lang-bi .pp-table td, .pp-lang-bi .pp-table th { line-height: 14pt; }
 .pp-head .pp-vi, .pp-table th .pp-vi { font-weight: 400; }
 .pp-title .pp-vi { font-size: 11pt; line-height: 15pt; font-weight: 700; color: #000; }
-.pp-company { text-align: center; font-size: 15pt; font-weight: 700; letter-spacing: 2px; }
+.pp-company { min-height: 1.3em; text-align: center; font-size: 15pt; font-weight: 700; letter-spacing: 2px; }
 .pp-title { margin-top: 2px; text-align: center; font-size: 14pt; font-weight: 700; }
 .pp-no { margin: 2px 0 4px; text-align: right; font-size: 10pt; }
 .pp-no .pp-no-line { display: inline-block; width: 30mm; border-bottom: 1px solid #000; }

@@ -406,7 +406,8 @@
   function paperHTML() {
     const d = state.draft;
     return window.SelfCheckPrint.paperHTML(d, tplOf(d), {
-      company: state.tpl.company,
+      // 離線版的公司名稱由使用者自己填（可空白）；主網站用範本裡的公司名稱
+      company: store$().companyName ? store$().companyName() : state.tpl.company,
       project: store$().projectName(),
       lang: printLang(),
     });
@@ -436,7 +437,7 @@
   // PDF 檔名：表單名稱_位置_日期[_語言].pdf（去掉檔名不允許的字元）
   function pdfName(d) {
     const suffix = { zh: '', vi: 'VI', bi: '中越對照' }[printLang()];
-    const name = printLang() === 'vi' ? tplOf(d).vi.title : d.name;
+    const name = printLang() === 'vi' ? (tplOf(d).vi || tplOf(d)).title : d.name; // 自訂範本沒有越南文
     return [name, d.location, d.date, suffix].filter(Boolean).join('_').replace(/[\\/:*?"<>|]/g, '-') + '.pdf';
   }
 

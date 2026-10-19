@@ -51,7 +51,52 @@ body { margin: 0; background: var(--page-bg); }
 .ol-backup-actions .ol-btn { padding: 10px 12px; font-size: 14px; text-align: left; }
 .ol-tip { padding: 8px 10px; font-size: 12px; color: #6b5300; background: #fffbea; border: 1px solid #f3e3a1; border-radius: 6px; line-height: 1.6; }
 
+/* 備份提醒（超過 7 天沒備份） */
+.ol-btn.ol-btn-alert { position: relative; border-color: #e5a50a; }
+.ol-btn.ol-btn-alert::after { content: ''; position: absolute; top: -3px; right: -3px; width: 9px; height: 9px; background: #e5484d; border: 2px solid #fff; border-radius: 50%; }
+.ol-remind {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  max-width: 1200px; margin: 10px auto 0; padding: 10px 14px; box-sizing: border-box;
+  font-size: 14px; color: #6b4a00; background: #fff6dc; border: 1px solid #f0d28a; border-radius: 10px;
+}
+.ol-remind[hidden] { display: none; }
+.ol-remind span { flex: 1 1 240px; line-height: 1.5; }
+.ol-remind .ol-btn { font-size: 14px; border-color: #e5a50a; color: #6b4a00; }
+.ol-remind-later { padding: 6px 8px; font-size: 13px; color: #8a6d2b; background: none; border: 0; }
+
+/* 公司名稱（工地視窗） */
+.pj-company { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #374151; }
+.pj-row { display: flex; gap: 8px; align-items: center; }
+.pj-row input, .pj-row select { flex: 1; min-width: 0; padding: 7px 10px; font: inherit; font-size: 14px; border: 1px solid #d9dde4; border-radius: 6px; background: #fff; }
+.pj-sub { margin: 4px 0 0; padding-top: 12px; font-size: 15px; border-top: 1px solid #eef0f3; }
+
+/* 自訂範本視窗 */
+.tp-dialog { width: min(680px, calc(100vw - 24px)); }
+.tp-box { display: flex; flex-direction: column; gap: 12px; padding: 18px 20px 20px; overflow-y: auto; }
+.tp-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.tp-list li { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid #e8ebf0; border-radius: 8px; }
+.tp-list li > div { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.tp-list small { font-size: 12px; color: var(--muted); }
+.tp-empty { padding: 12px; font-size: 13px; text-align: center; color: var(--muted); background: #f8f9fb; border-radius: 8px; }
+.tp-new { align-self: flex-start; padding: 8px 16px; font-size: 14px; background: var(--primary); }
+.tp-copy { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #374151; }
+.tp-fields { display: flex; flex-direction: column; gap: 10px; }
+.tp-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: #374151; }
+.tp-fields input, .tp-items textarea { padding: 7px 10px; font: inherit; font-size: 16px; border: 1px solid #d9dde4; border-radius: 6px; box-sizing: border-box; width: 100%; } /* 16px：iPhone 點輸入框時才不會自動放大畫面 */
+.tp-items { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.tp-items li { display: flex; gap: 8px; align-items: flex-start; padding: 8px; background: #f8f9fb; border-radius: 8px; }
+.tp-no { width: 24px; padding-top: 8px; font-size: 13px; color: var(--muted); text-align: right; flex-shrink: 0; }
+.tp-item-fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.tp-items textarea { resize: vertical; line-height: 1.4; }
+.tp-item-btns { display: flex; flex-direction: column; gap: 4px; }
+.tp-item-btns button { width: 32px; height: 30px; font-size: 14px; color: #4b5563; background: #fff; border: 1px solid #d9dde4; border-radius: 6px; }
+.tp-item-btns button:disabled { opacity: .35; }
+.tp-item-btns [data-tp="del-item"] { color: var(--danger); border-color: #f6c4c4; }
+.tp-actions { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid #eef0f3; }
+
 @media (max-width: 600px) {
+  .tp-box { padding: 14px 12px 16px; }
+  .ol-remind { margin: 8px 10px 0; }
   .ol-bar { padding: 8px 10px; }
   .ol-sub { display: none; }
   .ol-project > span { display: none; }
