@@ -18,7 +18,7 @@
     const page = window.PAGES['self-check'];
     content.innerHTML = page.render();
     page.mount(content);
-    document.title = `自主檢查表 離線版｜${window.SK_STORE.projectName()}`;
+    document.title = `自主檢查表｜${window.SK_STORE.projectName()}｜酪梨營造工具箱`;
   }
   function renderSelect() {
     sel.innerHTML = O.projects().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
@@ -167,13 +167,58 @@
     }).catch(() => setStatus(''));
   }
 
+  /* ---------- 封面與工具切換（#/ 封面、#/self-check 自主檢查表；手機返回鍵可回封面） ---------- */
+  const cover = document.getElementById('cover');
+  const bar = document.getElementById('olBar');
+  let toolShown = false;
+  let ready = false; // 裝置資料庫載入完成前，只能顯示封面
+  function route() {
+    const tool = ready && location.hash === '#/self-check';
+    cover.hidden = tool;
+    bar.hidden = !tool;
+    content.hidden = !tool;
+    if (tool && !toolShown) showPage();
+    toolShown = tool;
+    if (!tool) document.title = '酪梨營造工具箱';
+    window.scrollTo(0, 0);
+  }
+  window.addEventListener('hashchange', route);
+
+  /* ---------- 封面「最新更新」（data/updates.json 由 更新紀錄.md 產生） ---------- */
+  const SEEN_KEY = 'ol-seen-update';
+  async function renderNews() {
+    let list;
+    try { list = await (await fetch('data/updates.json')).json(); } catch (e) { return; }
+    if (!Array.isArray(list) || !list.length) return;
+    let seen = null;
+    try { seen = localStorage.getItem(SEEN_KEY); } catch (e) {}
+    const block = u => `
+      <div class="cv-news-day">
+        <div class="cv-news-date">${esc(u.date)}${seen && u.date > seen ? '<span class="cv-new">NEW</span>' : ''}</div>
+        <ul>${u.items.map(i => `<li>${esc(i)}</li>`).join('')}</ul>
+      </div>`;
+    const listEl = document.getElementById('cvNewsList');
+    const more = document.getElementById('cvNewsMore');
+    listEl.innerHTML = list.slice(0, 1).map(block).join('');
+    more.hidden = list.length <= 1;
+    more.onclick = () => { listEl.innerHTML = list.map(block).join(''); more.hidden = true; };
+    document.getElementById('cvNews').hidden = false;
+    try { localStorage.setItem(SEEN_KEY, list[0].date); } catch (e) {} // 下次開啟只標示更新的日期
+  }
+
   /* ---------- 啟動 ---------- */
+  // 封面不需要資料庫，先顯示；資料庫載入完成後才可進入工具（或直接回到原本開著的工具）
+  route();
+  renderNews();
   (async () => {
     try {
       await O.init();
       renderSelect();
-      showPage();
+      ready = true;
+      route();
     } catch (e) {
+      cover.hidden = true;
+      content.hidden = false;
       content.innerHTML = `<div class="sk-empty">無法啟動：${esc(e.message)}</div>`;
     }
   })();

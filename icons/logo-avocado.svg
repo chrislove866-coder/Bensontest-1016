@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70 -82 140 160" role="img" aria-label="酪梨營造：戴安全帽的酪梨">
+  <!-- 主標誌：戴安全帽的酪梨（帽子往下戴，罩住酪梨尖頂） -->
+  <defs>
+    <path id="avo" d="M0,-62 C28,-62 32,-26 46,8 C62,44 36,70 0,70 C-36,70 -62,44 -46,8 C-32,-26 -28,-62 0,-62 Z"/>
+  </defs>
+  <use href="#avo" fill="#3f6b25"/>
+  <use href="#avo" fill="#dbe9a6" transform="translate(0,6) scale(0.82)"/>
+  <circle cx="0" cy="30" r="19" fill="#8a5a2c"/>
+  <circle cx="-6" cy="24" r="5" fill="#a87443"/>
+  <path d="M-44,-14 C-44,-50 -24,-70 0,-70 C24,-70 44,-50 44,-14 Z" fill="#f2b51d"/>
+  <path d="M-6,-69 C-8,-50 -8,-30 -7,-14 L7,-14 C8,-30 8,-50 6,-69 Z" fill="#e0a00f"/>
+  <rect x="-56" y="-18" width="112" height="10" rx="5" fill="#e0a00f"/>
+  <path d="M-30,-50 C-26,-58 -18,-63 -10,-64" fill="none" stroke="#fbd76a" stroke-width="4" stroke-linecap="round"/>
+</svg>

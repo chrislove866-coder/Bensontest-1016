@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="酪梨營造工具箱：打勾的酪梨">
+  <!-- App 圖示：打勾的酪梨。滿版深綠底（手機系統會自行裁成圓角／圓形），主體在中央 80% 安全範圍內 -->
+  <defs>
+    <path id="avo" d="M0,-62 C28,-62 32,-26 46,8 C62,44 36,70 0,70 C-36,70 -62,44 -46,8 C-32,-26 -28,-62 0,-62 Z"/>
+  </defs>
+  <rect width="512" height="512" fill="#2f5a1c"/>
+  <g transform="translate(256,262) scale(2.35)">
+    <use href="#avo" fill="#6fa63d"/>
+    <use href="#avo" fill="#e6f0bb" transform="translate(0,6) scale(0.82)"/>
+    <circle cx="0" cy="26" r="23" fill="#8a5a2c"/>
+    <path d="M-11,26 L-3,35 L13,16" fill="none" stroke="#ffffff" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
