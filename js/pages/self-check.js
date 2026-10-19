@@ -128,8 +128,12 @@
   // 目前語言的範本內容（標題、分項、檢查項目）；沒有越南文時退回中文
   const tplText = f => (state.lang === 'vi' && tplOf(f).vi) || tplOf(f);
   const itemsOf = f => tplText(f).items;
-  const nameOf = f => tplText(f).title;
-  const catLabel = c => (state.lang === 'vi' && state.tpl.viCategories && state.tpl.viCategories[c]) || c;
+  // 畫面上的中文名稱精簡：「自主檢查表」→「自檢表」、類別省略結尾「工程」（列印的表格仍用完整名稱）
+  const shortTitle = t => (state.lang === 'zh' ? t.replace('自主檢查表', '自檢表') : t);
+  const nameOf = f => shortTitle(tplText(f).title);
+  const catLabel = c => (state.lang === 'vi'
+    ? (state.tpl.viCategories && state.tpl.viCategories[c]) || c
+    : c.replace(/工程$/, '') || c);
   const ymd = s => (s ? s.replace(/-/g, '/') : '—');
   const today = () => { const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0, 10); };
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -237,7 +241,7 @@
     const inCat = c => ids.filter(id => templates[id].category === c);
     // 預設選目前篩選類別的第一種表（「全部」時選第一個類別）
     const pick = inCat(state.trade)[0] || inCat(categories[0])[0];
-    const title = id => tplText({ template: id }).title;
+    const title = id => shortTitle(tplText({ template: id }).title);
     return `
       <form class="sk-new" method="dialog">
         <h3>${T('newTitle')}</h3>
