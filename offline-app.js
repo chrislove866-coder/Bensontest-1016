@@ -279,7 +279,7 @@
     tpDlg.innerHTML = `
       <div class="tp-box">
         <div class="pj-head">
-          <h3>📋 檢查表範本</h3>
+          <h3>📋 自訂空白檢查表</h3>
           <button class="sk-dlg-x" data-tp="close" aria-label="關閉">✕</button>
         </div>
         <p class="pj-hint">自己新增的範本會出現在每個工地的檢查表清單。內建範本不能改，可以「複製」一份再修改。</p>
@@ -386,7 +386,11 @@
     }
   }
 
-  document.getElementById('olTemplates').addEventListener('click', async () => {
+  // 按鈕放在檢查表清單上方「＋ 增加既有檢查表」旁邊（由共用畫面透過 SK_STORE.toolbarHTML 顯示）
+  window.SK_STORE.toolbarHTML = () =>
+    '<button class="sk-btn sk-tpl-btn" data-ol="templates" title="自己新增、修改檢查表範本（每個工地都會多一份）">📋 自訂空白檢查表</button>';
+  content.addEventListener('click', async e => {
+    if (!e.target.closest('[data-ol="templates"]')) return;
     await showList();
     tpDlg.showModal();
   });

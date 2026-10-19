@@ -34,14 +34,14 @@
   /* ---------- 介面文字（中／越） ---------- */
   const UI = {
     zh: {
-      title: '自主檢查表', projectHint: '目前專案（在上方選單切換）', newForm: '＋ 新增檢查表',
+      title: '自主檢查表', projectHint: '目前專案（在上方選單切換）', newForm: '＋ 增加既有檢查表',
       all: '全部', colCat: '類別', colItem: '檢查項目', colLoc: '位置', colDate: '日期', colStatus: '狀態',
       fill: '✎ 填表', fails: n => `${n} 項不合格`, empty: '沒有符合條件的檢查表', loading: '載入中…',
       loadFail: m => `無法載入檢查表：${m}`, openFail: m => `無法開啟檢查表：${m}`,
       done: '完成', doing: '進行中', todo: '未填',
       pass: '合格', fail: '不合格', na: '不適用',
       before: '施工前', during: '施工中', after: '施工完成',
-      newTitle: '新增檢查表', formType: '檢查表種類', location: '檢查位置', locEg: '例如：2F、B1 東側、全區',
+      newTitle: '增加既有檢查表', formType: '檢查表種類', location: '檢查位置', locEg: '例如：2F、B1 東側、全區',
       cancel: '取消', create: '建立並開始填寫',
       close: '關閉（不儲存）', noLoc: '未填位置', marked: (a, b) => `已標記 ${a}/${b} 項`,
       preview: '👁 預覽／列印', save: '💾 儲存', saving: '儲存中…',
@@ -180,7 +180,10 @@
           <button class="${state.lang === 'zh' ? 'on' : ''}" data-lang="zh" aria-pressed="${state.lang === 'zh'}">中文</button>
           <button class="${state.lang === 'vi' ? 'on' : ''}" data-lang="vi" aria-pressed="${state.lang === 'vi'}" lang="vi">Tiếng Việt</button>
         </div>
-        ${state.tpl ? `<button class="sk-fill sk-new-btn" data-act="new">${T('newForm')}</button>` : ''}
+        ${state.tpl ? `<div class="sk-new-btns">
+          <button class="sk-fill sk-new-btn" data-act="new">${T('newForm')}</button>
+          ${store$().toolbarHTML ? store$().toolbarHTML() : ''}
+        </div>` : ''}
       </div>`;
   }
 

@@ -730,7 +730,8 @@ button { font: inherit; cursor: pointer; }
 
 /* 標題（分頁籤樣式） */
 .sk-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; border-bottom: 1px solid var(--sk-line); }
-.sk-new-btn { margin-left: auto; padding: 7px 14px; font-size: 13px; }
+.sk-new-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-left: auto; }
+.sk-new-btn { padding: 7px 14px; font-size: 13px; }
 /* 語言切換：中文｜Tiếng Việt */
 .sk-lang { display: inline-flex; flex-shrink: 0; border: 1px solid #d9dde4; border-radius: 16px; overflow: hidden; background: #fff; }
 .sk-lang button { padding: 4px 12px; font-size: 13px; color: #4b5563; background: none; border: 0; white-space: nowrap; }
