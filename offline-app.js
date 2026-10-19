@@ -2,6 +2,7 @@
  * 自主檢查表離線版：外框邏輯
  *   - 載入共用的自主檢查表畫面（PAGES['self-check']）
  *   - 公司名稱（印在表頭，可空白）；工地（工程名稱）切換、新增／改名／刪除
+ *   - 第一次進入檢查表先填工地名稱（取代暫用的「我的工地」）
  *   - 自訂範本：自己新增、修改、刪除整份檢查表（或複製現有範本再改）
  *   - 備份匯出（下載 .json）／匯入；有填寫內容超過 7 天沒備份時提醒
  *   - 註冊 Service Worker，讓第一次開啟後沒有網路也能使用
@@ -76,6 +77,47 @@
     dlg.showModal();
   });
 
+  /* ---------- 開始使用：先填自己的工地（取代暫用的「我的工地」，避免印出來工程名稱寫錯） ---------- */
+  const placeholder = () => O.projects().find(p => p.name === O.DEFAULT_PROJECT);
+  function setupHTML(msg = '') {
+    const others = O.projects().length > 1;
+    return `
+      <form class="pj-box ol-setup" data-setup>
+        <div class="pj-head">
+          <h3>開始使用：先填寫工地</h3>
+          <button class="sk-dlg-x" type="button" data-x aria-label="關閉">✕</button>
+        </div>
+        <p class="pj-hint">工地名稱會印在每張檢查表的「工程名稱」，請先填好再開始填表。之後可以在右上角「✎ 工地」修改或新增其他工地。</p>
+        <label class="pj-company">工地名稱（必填）
+          <input name="name" placeholder="例如：中壢長鴻" maxlength="50" required autocomplete="off" />
+        </label>
+        <label class="pj-company">公司名稱（印在檢查表最上方，可空白）
+          <input name="company" value="${esc(O.company())}" placeholder="例如：○○營造有限公司" maxlength="40" autocomplete="off" />
+        </label>
+        <div class="pj-msg" ${msg ? '' : 'hidden'}>${esc(msg)}</div>
+        <button class="sk-fill ol-setup-go" type="submit">開始填表</button>
+        ${others ? `<button class="ol-setup-skip" type="button" data-setup-del>不需要「${esc(O.DEFAULT_PROJECT)}」，直接刪除它</button>` : ''}
+      </form>`;
+  }
+  function openSetup() {
+    dlg.innerHTML = setupHTML();
+    dlg.dataset.mode = 'setup';
+    if (!dlg.open) dlg.showModal();
+  }
+  async function finishSetup(fn) {
+    try { await fn(); } catch (e) { dlg.innerHTML = setupHTML(e.message); return; }
+    delete dlg.dataset.mode;
+    dlg.close();
+    renderSelect();
+    showPage();
+  }
+  // 沒填工地就關掉：回封面，下次進檢查表會再問
+  dlg.addEventListener('close', () => {
+    if (dlg.dataset.mode !== 'setup') return;
+    delete dlg.dataset.mode;
+    if (placeholder()) location.hash = '#/';
+  });
+
   /* ---------- 備份 ---------- */
   function backupHTML(msg = '') {
     return `
@@ -135,6 +177,13 @@
     if (e.target === dlg || e.target.closest('[data-x]')) { dlg.close(); return; }
     if (e.target.closest('[data-export]')) { dlg.innerHTML = backupHTML(await exportBackup()); return; }
     if (e.target.closest('[data-import]')) { fileInput.click(); return; }
+    if (e.target.closest('[data-setup-del]')) {
+      const p = placeholder();
+      const n = p ? await O.savedCount(p.id) : 0;
+      if (n) { dlg.innerHTML = setupHTML(`「${O.DEFAULT_PROJECT}」已經有 ${n} 份填寫的檢查表，請改填工地名稱，或到「✎ 工地」刪除。`); return; }
+      finishSetup(() => p && O.deleteProject(p.id));
+      return;
+    }
     const li = e.target.closest('li[data-id]');
     if (!li) return;
     const p = O.projects().find(x => x.id === li.dataset.id);
@@ -142,10 +191,20 @@
       const name = li.querySelector('.pj-input').value.trim();
       run(() => O.renameProject(p.id, name), `已改名為「${name}」`);
     }
-    if (e.target.closest('[data-delete]')) {
-      const n = await O.savedCount(p.id);
-      const warn = n ? `\n\n⚠ 這個工地有 ${n} 份已填寫的檢查表，刪除後無法復原。建議先匯出備份。` : '';
-      if (!confirm(`確定刪除工地「${p.name}」？${warn}`)) return;
+    // 刪除要按兩次（第一次變成「確定刪除」）。不用瀏覽器的 confirm()：LINE 等 App 內建瀏覽器會擋掉，按了沒反應
+    const delBtn = e.target.closest('[data-delete]');
+    if (delBtn) {
+      if (!delBtn.dataset.sure) {
+        dlg.querySelectorAll('[data-delete][data-sure]').forEach(b => { delete b.dataset.sure; b.textContent = '刪除'; });
+        const n = await O.savedCount(p.id);
+        delBtn.dataset.sure = '1';
+        delBtn.textContent = '確定刪除';
+        const msg = dlg.querySelector('.pj-msg');
+        msg.textContent = `再按一次「確定刪除」就會刪除工地「${p.name}」。`
+          + (n ? `⚠ 這個工地有 ${n} 份已填寫的檢查表，刪除後無法復原，建議先匯出備份。` : '');
+        msg.hidden = false;
+        return;
+      }
       run(() => O.deleteProject(p.id), `已刪除「${p.name}」`);
     }
   });
@@ -161,6 +220,16 @@
   });
   dlg.addEventListener('submit', e => {
     e.preventDefault();
+    if (e.target.matches('[data-setup]')) {
+      const name = e.target.name.value.trim();
+      const co = e.target.company.value.trim();
+      finishSetup(async () => {
+        const p = placeholder();
+        await O.setCurrent(p ? (await O.renameProject(p.id, name), p.id) : (await O.addProject(name)).id);
+        if (co !== O.company()) await O.setCompany(co);
+      });
+      return;
+    }
     if (e.target.matches('[data-company]')) {
       const name = e.target.company.value.trim();
       run(() => O.setCompany(name), name ? `公司名稱已改為「${name}」` : '公司名稱已清空，表頭會留白');
@@ -402,6 +471,7 @@
     if (tool && !toolShown) showPage();
     toolShown = tool;
     checkRemind();
+    if (tool && placeholder() && !dlg.open) openSetup();
     if (!tool) document.title = '酪梨營造工具箱';
     window.scrollTo(0, 0);
   }

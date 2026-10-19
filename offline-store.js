@@ -132,6 +132,7 @@
   }
 
   /* ---------- 工地（工程名稱） ---------- */
+  const DEFAULT_PROJECT = '我的工地'; // 第一次開啟時的暫用名稱，進入檢查表時會請使用者改成實際工地名稱
   let projects = [];
   let current = null;
 
@@ -140,7 +141,7 @@
     company = (await kvGet('company')) || '';
     projects = (await kvGet('projects')) || [];
     current = await kvGet('current');
-    if (!projects.length) await addProject('我的工地');
+    if (!projects.length) await addProject(DEFAULT_PROJECT);
     if (!projects.some(p => p.id === current)) await setCurrent(projects[0].id);
     const all = await templates();
     const tpl = all.templates;
@@ -299,6 +300,7 @@
   window.OFFLINE = {
     init,
     projects: () => projects,
+    DEFAULT_PROJECT,
     current: () => current,
     setCurrent, addProject, renameProject, deleteProject, savedCount,
     exportBackup, importBackup, markBackedUp, backupDue,
