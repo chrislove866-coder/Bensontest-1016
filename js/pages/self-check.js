@@ -131,6 +131,9 @@
   // 畫面上的中文名稱精簡：「自主檢查表」→「自檢表」、類別省略結尾「工程」（列印的表格仍用完整名稱）
   const shortTitle = t => (state.lang === 'zh' ? t.replace('自主檢查表', '自檢表') : t);
   const nameOf = f => shortTitle(tplText(f).title);
+  // 清單只留工項名稱（例：放樣工程施工自主檢查表 → 放樣），讓手機一眼看到右側「填表」；填表視窗與列印仍用完整名稱
+  const itemName = t => (state.lang === 'zh' ? t.replace(/(工程)?(施工)?(工程)?自主檢查表/, '') || t : t);
+  const listName = f => itemName(tplText(f).title);
   const catLabel = c => (state.lang === 'vi'
     ? (state.tpl.viCategories && state.tpl.viCategories[c]) || c
     : c.replace(/工程$/, '') || c);
@@ -216,7 +219,8 @@
               return `
                 <tr>
                   <td><span class="sk-trade">${esc(catLabel(f.trade))}</span></td>
-                  <td class="sk-name">${esc(nameOf(f))}${fails ? `<span class="sk-fail-tag">${T('fails')(fails)}</span>` : ''}</td>
+                  <td class="sk-name" title="${esc(nameOf(f))}">${esc(listName(f))}${fails ? `<span class="sk-fail-tag">${T('fails')(fails)}</span>` : ''}${
+                    f.location || f.date ? `<small class="sk-m-meta">${esc([f.location, f.date && ymd(f.date)].filter(Boolean).join('・'))}</small>` : ''}</td>
                   <td>${esc(f.location || '—')}</td>
                   <td>${ymd(f.date)}</td>
                   <td><span class="sk-status sk-status-${s}"><i></i>${T(s)}</span></td>
@@ -241,7 +245,7 @@
     const inCat = c => ids.filter(id => templates[id].category === c);
     // 預設選目前篩選類別的第一種表（「全部」時選第一個類別）
     const pick = inCat(state.trade)[0] || inCat(categories[0])[0];
-    const title = id => shortTitle(tplText({ template: id }).title);
+    const title = id => itemName(tplText({ template: id }).title);
     return `
       <form class="sk-new" method="dialog">
         <h3>${T('newTitle')}</h3>

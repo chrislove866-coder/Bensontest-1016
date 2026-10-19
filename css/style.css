@@ -775,6 +775,17 @@ button { font: inherit; cursor: pointer; }
 .sk-table tbody tr:hover { background: #fafaff; }
 .sk-trade { display: inline-block; padding: 2px 8px; font-size: 12px; border: 1px solid #d9dde4; border-radius: 4px; background: #fff; }
 .sk-name { color: var(--text); }
+.sk-m-meta { display: none; }
+/* 手機：位置、日期改顯示在名稱下方，讓右側「填表」一眼就看到 */
+@media (max-width: 600px) {
+  .sk-table th:nth-child(3), .sk-table th:nth-child(4),
+  .sk-table td:nth-child(3), .sk-table td:nth-child(4) { display: none; }
+  .sk-table th, .sk-table td { padding: 9px 6px; }
+  .sk-table td.sk-name { white-space: normal; }
+  .sk-table .sk-trade { padding: 1px 5px; font-size: 11px; }
+  .sk-table .sk-fill { padding: 5px 8px; }
+  .sk-m-meta { display: block; margin-top: 2px; font-size: 12px; color: var(--muted); white-space: normal; }
+}
 .sk-fail-tag { margin-left: 8px; padding: 1px 7px; font-size: 12px; color: var(--sk-fail); background: #fdecec; border-radius: 10px; }
 .sk-status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
 .sk-status i { width: 6px; height: 6px; border-radius: 50%; background: var(--c); }
