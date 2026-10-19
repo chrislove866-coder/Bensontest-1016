@@ -112,3 +112,12 @@ body { margin: 0; background: var(--page-bg); }
 .ol-setup-skip { align-self: center; padding: 4px 8px; font-size: 13px; color: var(--muted); background: none; border: 0; text-decoration: underline; }
 .pj-list .ac-del[data-sure] { color: #fff; background: #e5484d; border-color: #e5484d; }
 .sk-tpl-btn { padding: 7px 14px; font-size: 13px; font-weight: 700; }
+
+/* 帳號管理等不需要工地的頁面：隱藏工地選單與按鈕 */
+.ol-bar-page .ol-project, .ol-bar-page #olManage { display: none; }
+/* 登入者視窗（主網站） */
+.ol-user .ol-btn { display: block; text-align: center; text-decoration: none; font-size: 15px; padding: 10px; }
+
+/* 登入畫面（主網站）：酪梨標誌 */
+.login-logo { display: block; width: 84px; height: auto; margin: 0 auto 6px; }
+.login-card .login-brand { text-align: center; color: #2f5a1c; font-weight: 800; }

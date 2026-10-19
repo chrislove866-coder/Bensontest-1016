@@ -1,11 +1,15 @@
 /**
- * 自主檢查表離線版：外框邏輯
- *   - 載入共用的自主檢查表畫面（PAGES['self-check']）
+ * 酪梨營造工具箱：外框邏輯（主網站與離線版共用，原始檔在 web-prototype/js/app-shell.js）
+ * 資料來源 window.APP_STORE：離線版 offline-store.js（裝置本身）、主網站 js/server-store.js（伺服器）。
+ * APP_STORE.can(功能) 決定按鈕是否顯示：manage（工地、公司名稱）、templates（自訂空白檢查表）、
+ * backup（備份）、accounts（帳號管理）；離線版全部可用，主網站只有管理者可用。
+ *   - 載入共用的自主檢查表畫面（PAGES['self-check']）；主網站另有帳號管理（PAGES.accounts）
  *   - 公司名稱（印在表頭，可空白）；工地（工程名稱）切換、新增／改名／刪除
  *   - 第一次進入檢查表先填工地名稱（取代暫用的「我的工地」）
  *   - 自訂範本：自己新增、修改、刪除整份檢查表（或複製現有範本再改）
  *   - 備份匯出（下載 .json）／匯入；有填寫內容超過 7 天沒備份時提醒
- *   - 註冊 Service Worker，讓第一次開啟後沒有網路也能使用
+ *   - 離線版：註冊 Service Worker，讓第一次開啟後沒有網路也能使用
+ *   - 主網站：右上角顯示登入者（帳號管理、登出）
  */
 (function () {
   const content = document.getElementById('content');
@@ -14,7 +18,8 @@
   const fileInput = document.getElementById('olImportFile');
   const statusEl = document.getElementById('olStatus');
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const O = window.OFFLINE;
+  const O = window.APP_STORE;
+  const can = key => !O.can || O.can(key);
 
   function showPage() {
     const page = window.PAGES['self-check'];
@@ -245,7 +250,7 @@
   let remindLater = false; // 按「稍後」：這次開啟不再跳出提醒列（備份按鈕仍顯示紅點）
   async function checkRemind() {
     let due = null;
-    try { if (ready) due = await O.backupDue(); } catch (e) {}
+    try { if (ready && can('backup')) due = await O.backupDue(); } catch (e) {}
     backupBtn.classList.toggle('ol-btn-alert', !!due);
     remindEl.hidden = !due || remindLater || location.hash !== '#/self-check';
     if (due) {
@@ -387,7 +392,7 @@
   }
 
   // 按鈕放在檢查表清單上方「＋ 增加既有檢查表」旁邊（由共用畫面透過 SK_STORE.toolbarHTML 顯示）
-  window.SK_STORE.toolbarHTML = () =>
+  window.SK_STORE.toolbarHTML = () => !can('templates') ? '' :
     '<button class="sk-btn sk-tpl-btn" data-ol="templates" title="自己新增、修改檢查表範本（每個工地都會多一份）">📋 自訂空白檢查表</button>';
   content.addEventListener('click', async e => {
     if (!e.target.closest('[data-ol="templates"]')) return;
@@ -454,7 +459,7 @@
     statusEl.textContent = text;
     statusEl.hidden = !text;
   }
-  if ('serviceWorker' in navigator) {
+  if (O.offline && 'serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').then(reg => {
       const ready = () => setStatus('✓ 可離線使用');
       if (reg.active) ready();
@@ -462,24 +467,67 @@
     }).catch(() => setStatus(''));
   }
 
-  /* ---------- 封面與工具切換（#/ 封面、#/self-check 自主檢查表；手機返回鍵可回封面） ---------- */
+  /* ---------- 封面與工具切換（#/ 封面、#/self-check 自主檢查表、#/accounts 帳號管理；手機返回鍵可回封面） ---------- */
   const cover = document.getElementById('cover');
   const bar = document.getElementById('olBar');
-  let toolShown = false;
-  let ready = false; // 裝置資料庫載入完成前，只能顯示封面
+  const titleEl = bar.querySelector('.ol-title');
+  const PAGE_TITLE = { 'self-check': '自主檢查表', accounts: '帳號管理' };
+  let shown = null; // 目前顯示的工具
+  let ready = false; // 資料載入完成前，只能顯示封面
   function route() {
-    const tool = ready && location.hash === '#/self-check';
-    cover.hidden = tool;
+    const id = location.hash.replace(/^#\/?/, '');
+    const tool = ready && window.PAGES[id] && (id === 'self-check' || can(id)) ? id : null;
+    cover.hidden = !!tool;
     bar.hidden = !tool;
     content.hidden = !tool;
-    if (tool && !toolShown) showPage();
-    toolShown = tool;
+    bar.classList.toggle('ol-bar-page', !!tool && tool !== 'self-check'); // 帳號管理不需要工地選單
+    if (tool && tool !== shown) {
+      titleEl.textContent = PAGE_TITLE[tool] || '';
+      if (tool === 'self-check') showPage();
+      else {
+        content.innerHTML = window.PAGES[tool].render();
+        window.PAGES[tool].mount(content);
+        document.title = `${PAGE_TITLE[tool]}｜酪梨營造工具箱`;
+      }
+    }
+    shown = tool;
     checkRemind();
-    if (tool && placeholder() && !dlg.open) openSetup();
+    if (tool === 'self-check' && placeholder() && !dlg.open) openSetup();
     if (!tool) document.title = '酪梨營造工具箱';
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
+
+  /* ---------- 登入者（主網站）：帳號管理、登出 ---------- */
+  const userBtn = document.getElementById('olUser');
+  if (userBtn && O.user) {
+    const u = O.user();
+    userBtn.hidden = false;
+    userBtn.textContent = `👤 ${u.name}`;
+    userBtn.title = `${u.name}（${u.roleLabel}）`;
+    userBtn.addEventListener('click', () => {
+      dlg.innerHTML = `
+        <div class="pj-box ol-user">
+          <div class="pj-head">
+            <h3>👤 ${esc(u.name)}</h3>
+            <button class="sk-dlg-x" data-x aria-label="關閉">✕</button>
+          </div>
+          <p class="pj-hint">帳號：${esc(u.username)}　${esc(u.roleLabel)}${u.title ? `・${esc(u.title)}` : ''}</p>
+          ${can('accounts') ? '<a class="ol-btn" href="#/accounts" data-x>👥 帳號管理</a>' : ''}
+          <button class="ol-btn" data-logout>登出</button>
+        </div>`;
+      dlg.showModal();
+    });
+    dlg.addEventListener('click', async e => {
+      if (!e.target.closest('[data-logout]')) return;
+      await O.logout();
+      location.hash = '';
+      location.reload();
+    });
+  }
+  // 沒有權限的按鈕不顯示（主網站一般使用者只能填表）
+  document.getElementById('olManage').hidden = !can('manage');
+  document.getElementById('olBackup').hidden = !can('backup');
 
   /* ---------- 封面「最新更新」（data/updates.json 由 更新紀錄.md 產生） ---------- */
   const SEEN_KEY = 'ol-seen-update';

@@ -297,7 +297,10 @@
     companyName: () => company,
   };
 
-  window.OFFLINE = {
+  // 外框（js/app-shell.js）用的資料介面；主網站的同一介面在 web-prototype/js/server-store.js
+  window.APP_STORE = window.OFFLINE = {
+    offline: true,
+    can: () => true, // 離線版沒有登入，所有功能都可用
     init,
     projects: () => projects,
     DEFAULT_PROJECT,

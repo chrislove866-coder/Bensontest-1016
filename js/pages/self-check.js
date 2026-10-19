@@ -121,7 +121,7 @@
   const REVIEW = [['done', 'reviewDone'], ['pending', 'reviewPending']];
   const SIGNS = { review: 'signReview', manager: 'signManager', worker: 'signWorker' };
 
-  // 資料來源：主網站用 js/selfcheck-store-server.js（伺服器），離線版用 offline-store.js（裝置本身）
+  // 資料來源：主網站用 js/server-store.js（伺服器），離線版用 offline-store.js（裝置本身）
   const store$ = () => window.SK_STORE;
   const isAdmin = () => store$().canDelete();
   const tplOf = f => state.tpl.templates[f.template];
