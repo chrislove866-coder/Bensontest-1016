@@ -110,7 +110,7 @@ body { margin: 0; background: var(--page-bg); }
 .ol-setup .pj-company input { padding: 9px 10px; font: inherit; font-size: 16px; border: 1px solid #d9dde4; border-radius: 6px; background: #fff; }
 .ol-setup-go { align-self: stretch; padding: 11px; font-size: 16px; background: var(--primary); border-radius: 8px; }
 .ol-setup-skip { align-self: center; padding: 4px 8px; font-size: 13px; color: var(--muted); background: none; border: 0; text-decoration: underline; }
-.pj-list .ac-del[data-sure] { color: #fff; background: #e5484d; border-color: #e5484d; }
+.ac-del[data-sure] { color: #fff; background: #e5484d; border-color: #e5484d; }
 .sk-tpl-btn { padding: 7px 14px; font-size: 13px; font-weight: 700; }
 
 /* 帳號管理等不需要工地的頁面：隱藏工地選單與按鈕 */

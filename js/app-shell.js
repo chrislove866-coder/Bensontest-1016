@@ -368,15 +368,35 @@
     tpDlg.querySelector('.tp-box').scrollTop = 0;
     if (!ed.title) tpDlg.querySelector('[data-ed="category"]').focus();
   }
-  function leaveEditor() {
-    if (edDirty() && !confirm('範本還沒儲存，確定要離開嗎？\n\n要保留內容請按「取消」，再按「💾 儲存範本」。')) return;
+  /* 確認列：顯示在範本視窗最上方，選了按鈕才動作。
+     不用瀏覽器的 confirm()：LINE、Claude 預覽等內建瀏覽器會擋掉，按了沒反應 */
+  let tpAskDone = null;
+  function tpAsk(text, choices) {
+    tpDlg.querySelector('.tp-ask')?.remove();
+    const el = document.createElement('div');
+    el.className = 'sk-dlg-ask tp-ask';
+    el.innerHTML = `<span>${esc(text)}</span><div>${choices.map(([key, label, cls]) =>
+      `<button type="button" class="sk-btn ${cls || ''}" data-tpask="${key}">${esc(label)}</button>`).join('')}</div>`;
+    tpDlg.querySelector('.pj-head').after(el);
+    tpDlg.querySelector('.tp-box').scrollTop = 0;
+    el.querySelector('[data-tpask]').focus();
+    return new Promise(resolve => { tpAskDone = resolve; });
+  }
+  async function leaveEditor() {
+    if (edDirty()) {
+      const a = await tpAsk('範本還沒儲存，要怎麼處理？', [
+        ['save', '💾 儲存範本', 'sk-btn-primary'], ['discard', '不儲存，離開', 'sk-btn-danger'], ['keep', '繼續編輯']]);
+      if (a === 'save') saveEditor(tpDlg.querySelector('[data-tp="save"]'));
+      if (a !== 'discard') return;
+    }
     showList();
   }
   async function saveEditor(btn) {
     const changed = JSON.stringify(ed.items) !== JSON.stringify(JSON.parse(edSnap).items);
     if (ed.id && changed) {
       const n = await O.templateUsage(ed.id);
-      if (n && !confirm(`已有 ${n} 份填寫過的「${JSON.parse(edSnap).title}」。\n\n舊紀錄的標記會照項目順序保留：刪掉或調換順序的話，舊的標記可能對到別的項目。建議先匯出備份。\n\n確定要儲存嗎？`)) return;
+      if (n && await tpAsk(`已有 ${n} 份填寫過的「${JSON.parse(edSnap).title}」。舊紀錄的標記會照項目順序保留：刪掉或調換順序的話，舊的標記可能對到別的項目。建議先匯出備份。`,
+        [['ok', '確定儲存', 'sk-btn-primary'], ['keep', '取消']]) !== 'ok') return;
     }
     btn.disabled = true;
     try {
@@ -405,6 +425,13 @@
     if (ed) leaveEditor(); else tpDlg.close();
   });
   tpDlg.addEventListener('click', async e => {
+    const ak = e.target.closest('[data-tpask]');
+    if (ak) {
+      ak.closest('.tp-ask').remove();
+      if (tpAskDone) tpAskDone(ak.dataset.tpask);
+      tpAskDone = null;
+      return;
+    }
     const b = e.target.closest('[data-tp]');
     if (!b) return;
     const a = b.dataset.tp;
@@ -422,9 +449,9 @@
       const t = O.customTemplates()[b.dataset.id];
       const n = await O.templateUsage(b.dataset.id);
       const warn = n
-        ? `\n\n⚠ 已有 ${n} 份填寫過的「${t.title}」，會一起刪除且無法復原。建議先匯出備份。`
-        : '\n\n各工地裡這份還沒填寫的空白表也會一起移除。';
-      if (!confirm(`確定刪除範本「${t.title}」？${warn}`)) return;
+        ? `⚠ 已有 ${n} 份填寫過的「${t.title}」，會一起刪除且無法復原。建議先匯出備份。`
+        : '各工地裡這份還沒填寫的空白表也會一起移除。';
+      if (await tpAsk(`確定刪除範本「${t.title}」？${warn}`, [['ok', '確定刪除', 'sk-btn-danger'], ['keep', '取消']]) !== 'ok') return;
       await O.deleteTemplate(b.dataset.id);
       showPage();
       showList(`已刪除「${t.title}」`);
