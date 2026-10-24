@@ -912,6 +912,12 @@ button { font: inherit; cursor: pointer; }
 
 /* 填表視窗：訊息、清空／刪除 */
 .sk-dlg-msg { margin-top: 6px; padding: 6px 10px; font-size: 13px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; }
+/* 確認列（關閉、清空、刪除前詢問）：取代瀏覽器的確認視窗 */
+.sk-dlg-ask { flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 10px 12px; font-size: 14px; color: #7c2d12; background: #fff7ed; border: 1px solid #fdba74; border-radius: 8px; }
+.sk-dlg-ask[hidden] { display: none; }
+.sk-dlg-head:has(.sk-dlg-ask:not([hidden])) { flex-wrap: wrap; }
+.sk-dlg-ask span { flex: 1 1 220px; font-weight: 700; }
+.sk-dlg-ask div { display: flex; flex-wrap: wrap; gap: 8px; }
 .sk-dlg-danger { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; padding-top: 4px; }
 .sk-btn-danger { color: var(--sk-fail); border-color: #f6c4c4; }
 .sk-btn-danger:hover { background: #fdecec; }

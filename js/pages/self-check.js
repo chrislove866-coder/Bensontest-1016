@@ -62,10 +62,11 @@
       extraTitle: '其他檢查項目（自行填寫）', extraHint: '範本以外需要檢查的項目，空白的列不會儲存',
       extraName: '檢查項目', extraStd: '管理標準', extraAdd: '＋ 新增一列', extraDel: '刪除此列',
       reset: '↺ 清空重填', remove: '🗑 刪除這份檢查表',
-      resetConfirm: '清空這份檢查表的所有填寫內容（標記、說明、複查結果、簽名）？\n\n按「儲存」後才會生效；不想清空可按 ✕ 關閉。',
+      resetConfirm: '確定清空這份檢查表的所有填寫內容（標記、說明、複查結果、簽名）？按「儲存」後才會生效。',
+      askReset: '確定清空', askRemove: '確定刪除', askKeep: '繼續填寫', askSave: '💾 儲存並關閉', askDiscard: '不儲存，直接關閉',
       resetDone: '已清空，按「儲存」後生效',
-      discardConfirm: '這份檢查表有尚未儲存的內容，確定要關閉嗎？\n\n要保留內容請按「取消」，再按「💾 儲存」。',
-      removeConfirm: n => `確定刪除「${n}」？\n刪除後無法復原。`,
+      discardConfirm: '這份檢查表有尚未儲存的內容，要怎麼處理？',
+      removeConfirm: n => `確定刪除「${n}」？刪除後無法復原。`,
       pvBack: '← 返回填表', pvTitle: n => `預覽：${n}`, pvHint: '顯示目前填寫的內容（含尚未儲存的修改）',
       pvFit: p => `已自動縮小為 ${p}%，可印成一頁`,
       pvLang: '列印語言', print: '🖨 列印', pdf: '⬇ 下載 PDF', pdfBusy: '產生中…',
@@ -100,10 +101,11 @@
       extraTitle: 'Hạng mục kiểm tra khác (tự điền)', extraHint: 'Các hạng mục cần kiểm tra ngoài mẫu; dòng để trống sẽ không được lưu',
       extraName: 'Nội dung kiểm tra', extraStd: 'Tiêu chuẩn quản lý', extraAdd: '＋ Thêm dòng', extraDel: 'Xóa dòng này',
       reset: '↺ Xóa trắng, điền lại', remove: '🗑 Xóa phiếu này',
-      resetConfirm: 'Xóa toàn bộ nội dung đã điền của phiếu này (đánh dấu, ghi chú, kết quả kiểm tra lại, chữ ký)?\n\nChỉ có hiệu lực sau khi nhấn "Lưu"; nếu không muốn xóa, nhấn ✕ để đóng.',
+      resetConfirm: 'Xóa toàn bộ nội dung đã điền của phiếu này (đánh dấu, ghi chú, kết quả kiểm tra lại, chữ ký)? Chỉ có hiệu lực sau khi nhấn "Lưu".',
+      askReset: 'Xác nhận xóa trắng', askRemove: 'Xác nhận xóa', askKeep: 'Tiếp tục điền', askSave: '💾 Lưu và đóng', askDiscard: 'Đóng, không lưu',
       resetDone: 'Đã xóa trắng, nhấn "Lưu" để áp dụng',
-      discardConfirm: 'Phiếu này có nội dung chưa lưu, bạn có chắc muốn đóng không?\n\nĐể giữ lại nội dung, nhấn "Hủy" rồi nhấn "💾 Lưu".',
-      removeConfirm: n => `Xác nhận xóa "${n}"?\nSau khi xóa không thể khôi phục.`,
+      discardConfirm: 'Phiếu này có nội dung chưa lưu, bạn muốn xử lý thế nào?',
+      removeConfirm: n => `Xác nhận xóa "${n}"? Sau khi xóa không thể khôi phục.`,
       pvBack: '← Quay lại', pvTitle: n => `Xem trước: ${n}`, pvHint: 'Hiển thị nội dung đang điền (kể cả phần chưa lưu)',
       pvFit: p => `Đã tự động thu nhỏ còn ${p}% để in vừa một trang`,
       pvLang: 'Ngôn ngữ in', print: '🖨 In', pdf: '⬇ Tải PDF', pdfBusy: 'Đang tạo…',
@@ -325,6 +327,7 @@
           </div>
           <div class="sk-dlg-msg" hidden></div>
         </div>
+        <div class="sk-dlg-ask" hidden></div>
         <div class="sk-dlg-actions">
           <button class="sk-btn" data-act="preview">${T('preview')}</button>
           <button class="sk-btn sk-btn-primary" data-act="save">${T('save')}</button>
@@ -498,10 +501,30 @@
       }
       let openedSnapshot = null;
       const isDirty = () => !!state.draft && snapshot(state.draft) !== openedSnapshot;
+      /* --- 確認列：顯示在視窗上方，按鈕選擇後才動作 ---
+         不用瀏覽器的 confirm()：LINE、Claude 預覽等內建瀏覽器會擋掉，按了沒反應（曾發生 ✕ 關不掉） */
+      let askDone = null;
+      function ask(text, choices) {
+        const el = dlg.querySelector('.sk-dlg-ask');
+        el.innerHTML = `<span>${esc(text)}</span><div>${choices.map(([key, label, cls]) =>
+          `<button type="button" class="sk-btn ${cls || ''}" data-ask="${key}">${esc(label)}</button>`).join('')}</div>`;
+        el.hidden = false;
+        el.querySelector('[data-ask]').focus();
+        return new Promise(resolve => { askDone = resolve; });
+      }
+      function answer(key) {
+        const el = dlg.querySelector('.sk-dlg-ask');
+        if (el) el.hidden = true;
+        if (askDone) askDone(key);
+        askDone = null;
+      }
       // 關閉填表視窗：有未儲存內容時先詢問，避免誤觸就遺失（電腦版常見）
-      function tryClose() {
-        if (isDirty() && !confirm(T('discardConfirm'))) return;
-        dlg.close();
+      async function tryClose() {
+        if (!isDirty()) { dlg.close(); return; }
+        const a = await ask(T('discardConfirm'), [
+          ['save', T('askSave'), 'sk-btn-primary'], ['discard', T('askDiscard'), 'sk-btn-danger'], ['keep', T('askKeep')]]);
+        if (a === 'save') dlg.querySelector('[data-act="save"]').click();
+        if (a === 'discard') dlg.close();
       }
       // Esc 鍵：同樣先詢問
       dlg.addEventListener('cancel', e => {
@@ -644,8 +667,8 @@
         }
       }
 
-      function reset() {
-        if (!confirm(T('resetConfirm'))) return;
+      async function reset() {
+        if (await ask(T('resetConfirm'), [['ok', T('askReset'), 'sk-btn-danger'], ['keep', T('cancel')]]) !== 'ok') return;
         const d = state.draft;
         Object.assign(d, {
           contractor: '', sub: '', date: today(), timing: [],
@@ -660,7 +683,8 @@
 
       async function remove() {
         const d = state.draft;
-        if (!confirm(T('removeConfirm')(nameOf(d) + (d.location ? `（${d.location}）` : '')))) return;
+        const name = nameOf(d) + (d.location ? `（${d.location}）` : '');
+        if (await ask(T('removeConfirm')(name), [['ok', T('askRemove'), 'sk-btn-danger'], ['keep', T('cancel')]]) !== 'ok') return;
         try {
           await store$().deleteForm(d.id);
           state.forms = state.forms.filter(f => f.id !== d.id);
@@ -801,6 +825,8 @@
           if (marks[i] === 'x') dlg.querySelector(`.sk-note[data-i="${i}"]`).focus();
           return;
         }
+        const ak = e.target.closest('[data-ask]');
+        if (ak) { answer(ak.dataset.ask); return; }
         const act = e.target.closest('[data-act]');
         if (!act) return;
         const a = act.dataset.act;
