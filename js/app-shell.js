@@ -9,7 +9,7 @@
  *   - 自訂範本：自己新增、修改、刪除整份檢查表（或複製現有範本再改）
  *   - 備份匯出（下載 .json）／匯入；有填寫內容超過 7 天沒備份時提醒
  *   - 離線版：註冊 Service Worker，讓第一次開啟後沒有網路也能使用
- *   - 主網站：右上角顯示登入者（帳號管理、登出）
+ *   - 主網站：右上角顯示登入者（修改自己的密碼、帳號管理、登出）
  */
 (function () {
   const content = document.getElementById('content');
@@ -225,6 +225,7 @@
   });
   dlg.addEventListener('submit', e => {
     e.preventDefault();
+    if (e.target.matches('[data-pw-form]')) return; // 修改密碼另外處理（登入者選單）
     if (e.target.matches('[data-setup]')) {
       const name = e.target.name.value.trim();
       const co = e.target.company.value.trim();
@@ -532,24 +533,67 @@
     userBtn.hidden = false;
     userBtn.textContent = `👤 ${u.name}`;
     userBtn.title = `${u.name}（${u.roleLabel}）`;
-    userBtn.addEventListener('click', () => {
-      dlg.innerHTML = `
+    const userHTML = (msg = '') => `
         <div class="pj-box ol-user">
           <div class="pj-head">
             <h3>👤 ${esc(u.name)}</h3>
             <button class="sk-dlg-x" data-x aria-label="關閉">✕</button>
           </div>
           <p class="pj-hint">帳號：${esc(u.username)}　${esc(u.roleLabel)}${u.title ? `・${esc(u.title)}` : ''}</p>
+          <div class="pj-msg" ${msg ? '' : 'hidden'}>${esc(msg)}</div>
+          <button class="ol-btn" data-pw>🔑 修改密碼</button>
           ${can('accounts') ? '<a class="ol-btn" href="#/accounts" data-x>👥 帳號管理</a>' : ''}
           <button class="ol-btn" data-logout>登出</button>
         </div>`;
+    // 修改自己的密碼：要先輸入目前的密碼（忘記的話請管理者在帳號管理「重設密碼」）
+    const pwHTML = (msg = '') => `
+        <form class="pj-box ol-user ol-pw" data-pw-form autocomplete="off">
+          <div class="pj-head">
+            <h3>🔑 修改密碼</h3>
+            <button class="sk-dlg-x" type="button" data-x aria-label="關閉">✕</button>
+          </div>
+          <label class="pj-company">目前的密碼
+            <input name="current" type="password" required autocomplete="current-password" />
+          </label>
+          <label class="pj-company">新密碼（至少 8 個字元）
+            <input name="password" type="password" minlength="8" maxlength="100" required autocomplete="new-password" />
+          </label>
+          <label class="pj-company">再輸入一次新密碼
+            <input name="again" type="password" minlength="8" maxlength="100" required autocomplete="new-password" />
+          </label>
+          <div class="pj-msg" ${msg ? '' : 'hidden'}>${esc(msg)}</div>
+          <button class="sk-fill ol-setup-go" type="submit">儲存新密碼</button>
+          <p class="pj-hint">忘記目前的密碼：請管理者在「帳號管理」幫你重設。</p>
+        </form>`;
+    userBtn.addEventListener('click', () => {
+      dlg.innerHTML = userHTML();
       dlg.showModal();
     });
     dlg.addEventListener('click', async e => {
+      if (e.target.closest('[data-pw]')) {
+        dlg.innerHTML = pwHTML();
+        dlg.querySelector('[name="current"]').focus();
+        return;
+      }
       if (!e.target.closest('[data-logout]')) return;
       await O.logout();
       location.hash = '';
       location.reload();
+    });
+    dlg.addEventListener('submit', async e => {
+      const f = e.target.closest('[data-pw-form]');
+      if (!f) return;
+      e.preventDefault();
+      if (f.password.value !== f.again.value) { dlg.innerHTML = pwHTML('兩次輸入的新密碼不一樣，請重新輸入'); return; }
+      const btn = f.querySelector('[type="submit"]');
+      btn.disabled = true;
+      try {
+        await O.changePassword(f.current.value, f.password.value);
+      } catch (err) {
+        dlg.innerHTML = pwHTML(err.message);
+        return;
+      }
+      dlg.innerHTML = userHTML('密碼已更新，下次登入請用新密碼');
     });
   }
   // 沒有權限的按鈕不顯示（主網站一般使用者只能填表）

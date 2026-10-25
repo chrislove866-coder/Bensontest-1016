@@ -107,7 +107,7 @@ body { margin: 0; background: var(--page-bg); }
 
 /* 開始使用：先填工地 */
 .ol-setup { gap: 12px; }
-.ol-setup .pj-company input { padding: 9px 10px; font: inherit; font-size: 16px; border: 1px solid #d9dde4; border-radius: 6px; background: #fff; }
+.ol-setup .pj-company input, .ol-pw .pj-company input { padding: 9px 10px; font: inherit; font-size: 16px; border: 1px solid #d9dde4; border-radius: 6px; background: #fff; }
 .ol-setup-go { align-self: stretch; padding: 11px; font-size: 16px; background: var(--primary); border-radius: 8px; }
 .ol-setup-skip { align-self: center; padding: 4px 8px; font-size: 13px; color: var(--muted); background: none; border: 0; text-decoration: underline; }
 .ac-del[data-sure] { color: #fff; background: #e5484d; border-color: #e5484d; }
@@ -121,3 +121,11 @@ body { margin: 0; background: var(--page-bg); }
 /* 登入畫面（主網站）：酪梨標誌 */
 .login-logo { display: block; width: 84px; height: auto; margin: 0 auto 6px; }
 .login-card .login-brand { text-align: center; color: #2f5a1c; font-weight: 800; }
+
+/* 帳號管理：重設密碼（主網站） */
+.ac-reset-row td { background: #fff7ed; }
+.ac-reset { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ac-reset input { flex: 1 1 180px; min-width: 0; padding: 7px 10px; font: inherit; font-size: 16px; border: 1px solid #d9dde4; border-radius: 6px; }
+.ac-reset-hint { margin-top: 6px; font-size: 12px; color: var(--muted); white-space: normal; }
+.sk-act .ac-edit + .ac-edit { margin-left: 6px; }
+.ol-pw { gap: 12px; }
