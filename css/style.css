@@ -957,8 +957,9 @@ button { font: inherit; cursor: pointer; }
 .sk-pv-title .sk-pv-fit { align-self: flex-start; margin-top: 2px; padding: 1px 8px; color: #1d7a2a; background: #e8f7ea; border-radius: 10px; }
 .sk-pv-msg { margin: 10px 16px 0; padding: 8px 12px; font-size: 13px; color: #9a3412; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 6px; }
 .sk-pv-wrap { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 20px 12px 40px; }
-/* 紙張內一律不讓瀏覽器自動調整字級（較舊的 iOS 需要 none 才完全關閉） */
-.sk-paper, .sk-paper *, #skPrintRoot, #skPrintRoot * { -webkit-text-size-adjust: none !important; text-size-adjust: none !important; }
+/* 紙張內一律不讓瀏覽器自動調整字級（較舊的 iOS 需要 none 才完全關閉）
+   .pp-fit：產生 PDF 時 html2pdf 會把紙張複製到 .sk-paper 外面，也要關閉，否則 iPhone 會放大字、右邊被切掉 */
+.sk-paper, .sk-paper *, .pp-fit, .pp-fit *, #skPrintRoot, #skPrintRoot * { -webkit-text-size-adjust: none !important; text-size-adjust: none !important; }
 .sk-paper {
   width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm 10mm;
   background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,.18);

@@ -221,7 +221,8 @@
       margin: [10, 10, 12, 10],
       filename,
       image: { type: 'jpeg', quality: 0.95 },
-      html2canvas: { scale: 2, backgroundColor: '#ffffff' },
+      // 手機螢幕比 A4 窄：拍照時假裝螢幕夠寬、不帶捲動位置，否則 iPhone 會把右邊切掉、分頁位置跑掉
+      html2canvas: { scale: 2, backgroundColor: '#ffffff', windowWidth: Math.max(window.innerWidth, 1024), scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
       pagebreak: { mode: ['css', 'legacy'], avoid: ['tr', '.pp-signs'] },
     }).from(contentEl).save();
