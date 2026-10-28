@@ -960,6 +960,9 @@ button { font: inherit; cursor: pointer; }
 /* 紙張內一律不讓瀏覽器自動調整字級（較舊的 iOS 需要 none 才完全關閉）
    .pp-fit：產生 PDF 時 html2pdf 會把紙張複製到 .sk-paper 外面，也要關閉，否則 iPhone 會放大字、右邊被切掉 */
 .sk-paper, .sk-paper *, .pp-fit, .pp-fit *, #skPrintRoot, #skPrintRoot * { -webkit-text-size-adjust: none !important; text-size-adjust: none !important; }
+/* 產生 PDF 時 html2pdf 會把紙張放進自己的外框並「置中」；iPhone 上量位置與拍照的畫面寬度不同，
+   置中的位移會讓整張往右偏、右邊被切掉，所以固定貼齊左邊 */
+.html2pdf__container { left: 0 !important; right: auto !important; margin: 0 !important; }
 .sk-paper {
   width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm 10mm;
   background: #fff; box-shadow: 0 4px 20px rgba(0,0,0,.18);
