@@ -47,7 +47,10 @@
       preview: '👁 預覽／列印', save: '💾 儲存', saving: '儲存中…',
       contractor: '承攬廠商', contractorPh: '廠商名稱', sub: '協力廠商', subPh: '協力廠商（如有）',
       locPh: '例如：2F、B1 東側', date: '檢查日期', timing: '檢查時機', legend: '結果標記：',
-      std: '規定標準：', notePh: '實際檢查情形（可空白）', itemAria: n => `第 ${n} 項結果`,
+      std: '規定標準：', stdEdit: '✏️ 修改標準', stdEdited: '本工地已修改', stdSave: '儲存（套用到本工地）',
+      stdDefault: '恢復原本的標準', stdSaved: '已修改本工地的管理標準；這一張表按「儲存」後生效。',
+      stdHint: (site, name) => `會套用到「${site}」所有還沒填寫的「${name}」，之後新增的也一樣；已經填好的表不會改變。`,
+      notePh: '實際檢查情形（可空白）', itemAria: n => `第 ${n} 項結果`,
       review: '缺失複查結果', reviewDone: '已完成改善（檢附改善前中後照片）',
       reviewPending: '未完成改善，填具「缺失改善追蹤表」進行追蹤改善',
       reviewDate: '複查日期', reviewTitle: '複查人員職稱', reviewTitlePh: '職稱',
@@ -85,7 +88,10 @@
       preview: '👁 Xem trước / In', save: '💾 Lưu', saving: 'Đang lưu…',
       contractor: 'Nhà thầu thi công', contractorPh: 'Tên nhà thầu', sub: 'Nhà thầu phụ', subPh: 'Nhà thầu phụ (nếu có)',
       locPh: 'VD: 2F, B1 phía Đông', date: 'Ngày kiểm tra', timing: 'Thời điểm kiểm tra', legend: 'Ký hiệu kết quả:',
-      std: 'Tiêu chuẩn: ', notePh: 'Tình trạng kiểm tra thực tế (có thể để trống)', itemAria: n => `Kết quả mục ${n}`,
+      std: 'Tiêu chuẩn: ', stdEdit: '✏️ Sửa tiêu chuẩn', stdEdited: 'Công trường đã sửa', stdSave: 'Lưu (áp dụng cho công trường)',
+      stdDefault: 'Khôi phục tiêu chuẩn gốc', stdSaved: 'Đã sửa tiêu chuẩn của công trường; phiếu này có hiệu lực sau khi bấm "Lưu".',
+      stdHint: (site, name) => `Áp dụng cho tất cả phiếu "${name}" chưa điền của "${site}" và phiếu tạo mới; phiếu đã điền không thay đổi.`,
+      notePh: 'Tình trạng kiểm tra thực tế (có thể để trống)', itemAria: n => `Kết quả mục ${n}`,
       review: 'Kết quả kiểm tra lại lỗi', reviewDone: 'Đã khắc phục xong (kèm ảnh trước, trong và sau khi khắc phục)',
       reviewPending: 'Chưa khắc phục xong, lập "Phiếu theo dõi khắc phục lỗi" để theo dõi khắc phục',
       reviewDate: 'Ngày kiểm tra lại', reviewTitle: 'Chức danh người kiểm tra lại', reviewTitlePh: 'Chức danh',
@@ -129,7 +135,18 @@
   const tplOf = f => state.tpl.templates[f.template];
   // 目前語言的範本內容（標題、分項、檢查項目）；沒有越南文時退回中文
   const tplText = f => (state.lang === 'vi' && tplOf(f).vi) || tplOf(f);
-  const itemsOf = f => tplText(f).items;
+  // 管理標準可依工地修改（每個案場規定不同）：{項目序號: 文字}
+  //   填過的表用儲存當時存下的 f.std（之後工地再改也不變；功能上線前填的表 = 原本的標準）
+  //   還沒填過的表跟著工地設定
+  const stdsOf = f => f.std || (f.version > 0 ? {} : (store$().siteStds?.()[f.template] || {}));
+  const canEditStd = () => !!(store$().setSiteStd && store$().canEditStd()) && state.lang === 'zh';
+  function withStd(f, t) {
+    const s = stdsOf(f);
+    if (!Object.keys(s).length) return t;
+    const put = items => items.map((it, i) => (s[i] != null ? [it[0], s[i]] : it)); // 改過的沒有越南文，顯示中文
+    return { ...t, items: put(t.items), ...(t.vi ? { vi: { ...t.vi, items: put(t.vi.items) } } : {}) };
+  }
+  const itemsOf = f => withStd(f, tplText(f)).items;
   // 畫面上的中文名稱精簡：「自主檢查表」→「自檢表」、類別省略結尾「工程」（列印的表格仍用完整名稱）
   const shortTitle = t => (state.lang === 'zh' ? t.replace('自主檢查表', '自檢表') : t);
   const nameOf = f => shortTitle(tplText(f).title);
@@ -358,7 +375,7 @@
                 <div class="sk-item-main">
                   <div class="sk-item-text">
                     <div class="sk-item-name"><span class="sk-item-no">${i + 1}.</span>${esc(name)}</div>
-                    ${std ? `<div class="sk-item-std">${T('std')}${esc(std)}</div>` : ''}
+                    ${stdHTML(i, std)}
                   </div>
                   <div class="sk-marks" role="group" aria-label="${esc(T('itemAria')(i + 1))}">
                     ${MARKS.map(mk => `
@@ -373,6 +390,29 @@
         ${extrasHTML(items.length)}
         ${footerHTML()}
       </div>`;
+  }
+
+  /* ---------- 管理標準（可依工地修改） ---------- */
+  function stdHTML(i, std) {
+    const d = state.draft;
+    const edited = stdsOf(d)[i] != null;
+    if (state.stdEdit === i) {
+      return `
+        <div class="sk-std-form">
+          <textarea data-std-text rows="2" maxlength="300" aria-label="${esc(T('std'))}">${esc(state.stdDraft ?? std)}</textarea>
+          <div class="sk-std-hint">${esc(T('stdHint')(store$().projectName(), shortTitle(tplOf(d).title)))}</div>
+          <div class="sk-std-btns">
+            <button type="button" class="sk-btn sk-btn-primary" data-act="std-save" data-i="${i}">${T('stdSave')}</button>
+            ${edited ? `<button type="button" class="sk-btn" data-act="std-default" data-i="${i}">${T('stdDefault')}</button>` : ''}
+            <button type="button" class="sk-btn" data-act="std-cancel">${T('cancel')}</button>
+          </div>
+        </div>`;
+    }
+    const edit = canEditStd();
+    if (!std && !edit) return '';
+    return `
+      <div class="sk-item-std">${std ? T('std') + esc(std) : ''}${edited ? `<span class="sk-std-tag">${T('stdEdited')}</span>` : ''}${edit
+        ? `<button type="button" class="sk-std-edit" data-act="std-edit" data-i="${i}">${T('stdEdit')}</button>` : ''}</div>`;
   }
 
   /* ---------- 其他檢查項目（自行填寫，對應 Word 範本最後的空白列） ---------- */
@@ -419,7 +459,7 @@
   };
   function paperHTML() {
     const d = state.draft;
-    return window.SelfCheckPrint.paperHTML(d, tplOf(d), {
+    return window.SelfCheckPrint.paperHTML(d, withStd(d, tplOf(d)), {
       // 離線版的公司名稱由使用者自己填（可空白）；主網站用範本裡的公司名稱
       company: store$().companyName ? store$().companyName() : state.tpl.company,
       project: store$().projectName(),
@@ -497,7 +537,7 @@
       function snapshot(d) {
         const notes = Object.fromEntries(Object.entries(d.notes || {}).filter(([, v]) => String(v).trim()));
         const extras = (d.extras || []).filter(x => !isBlankExtra(x));
-        return JSON.stringify([d.location, d.date, d.contractor, d.sub, d.timing, d.marks, notes, d.review, d.signs, extras]);
+        return JSON.stringify([d.location, d.date, d.contractor, d.sub, d.timing, d.marks, notes, d.review, d.signs, extras, d.std]);
       }
       let openedSnapshot = null;
       const isDirty = () => !!state.draft && snapshot(state.draft) !== openedSnapshot;
@@ -616,6 +656,7 @@
           return;
         }
         state.openId = id;
+        state.stdEdit = state.stdDraft = null;
         state.draft = {
           ...f,
           marks: [...f.marks],
@@ -653,6 +694,7 @@
             marks: d.marks, notes: d.notes, review: d.review, signs: d.signs,
             extras: d.extras.filter(x => !isBlankExtra(x))
               .map(x => ({ name: x.name.trim(), std: x.std.trim(), mark: x.mark, note: x.note.trim() })),
+            std: stdsOf(d), // 存下當時的管理標準
           };
           const saved = decorate(await store$().saveForm(d.id, body));
           const i = state.forms.findIndex(f => f.id === saved.id);
@@ -693,6 +735,20 @@
         } catch (e) {
           showMsg(e.message);
         }
+      }
+
+      // 修改工地的管理標準（text 空白＝恢復原本）：馬上存到工地，這一張表則要按「儲存」
+      async function saveStd(i, text) {
+        const d = state.draft;
+        try {
+          d.std = { ...(await store$().setSiteStd(d.template, i, text)) };
+        } catch (e) {
+          showMsg(e.message);
+          return;
+        }
+        state.stdEdit = state.stdDraft = null;
+        rerenderKeepScroll();
+        showMsg(T('stdSaved'));
       }
 
       /* --- 預覽／列印／PDF --- */
@@ -835,6 +891,17 @@
         if (a === 'preview') openPreview();
         if (a === 'reset') reset();
         if (a === 'delete') remove();
+        if (a === 'std-edit') {
+          state.stdEdit = +act.dataset.i;
+          state.stdDraft = null;
+          rerenderKeepScroll();
+          const ta = dlg.querySelector('[data-std-text]');
+          ta.focus();
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+        if (a === 'std-cancel') { state.stdEdit = state.stdDraft = null; rerenderKeepScroll(); }
+        if (a === 'std-save') saveStd(+act.dataset.i, dlg.querySelector('[data-std-text]').value);
+        if (a === 'std-default') saveStd(+act.dataset.i, '');
         if (a === 'extra-add') {
           state.draft.extras.push(blankExtra());
           rerenderKeepScroll();
@@ -858,7 +925,8 @@
       dlg.addEventListener('input', e => {
         const t = e.target;
         const d = state.draft;
-        if (t.dataset.xfield) d.extras[+t.dataset.xi][t.dataset.xfield] = t.value;
+        if (t.matches('[data-std-text]')) state.stdDraft = t.value; // 修改中的標準：點其他按鈕重畫時保留
+        else if (t.dataset.xfield) d.extras[+t.dataset.xi][t.dataset.xfield] = t.value;
         else if (t.matches('.sk-note')) d.notes[t.dataset.i] = t.value;
         else if (t.dataset.field) {
           const f = t.dataset.field;

@@ -64,6 +64,7 @@
       const w = html ? v : esc(v);
       if (lang === 'zh') return z;
       if (lang === 'vi') return w;
+      if (w === z) return z; // 工地自己改的管理標準沒有越南文，只印一次
       return `${z}<span class="pp-vi">${w}</span>`;
     };
     const lb = (key, html = false) => pick(L[key][0], L[key][1], html);
