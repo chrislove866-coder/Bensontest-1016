@@ -3,7 +3,7 @@
  * 第一次開啟時把所有檔案存到裝置，之後沒有網路也能開啟。
  * VERSION 由 tools/build_offline.py 依檔案內容自動更新；版本變了會換新快取。
  */
-const VERSION = '1bcdb09078';
+const VERSION = '5bb42de11e';
 const CACHE = `selfcheck-offline-${VERSION}`;
 const FILES = [
   './',
@@ -15,6 +15,7 @@ const FILES = [
   'js/app-shell.js',
   'js/pages/self-check.js',
   'js/pages/self-check-print.js',
+  'js/pages/self-check-guides.js',
   'js/vendor/html2pdf.bundle.min.js',
   'data/templates.json',
   'data/updates.json',
