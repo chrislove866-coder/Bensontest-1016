@@ -20,12 +20,20 @@
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const O = window.APP_STORE;
   const can = key => !O.can || O.can(key);
+  // 跟著上方「工地」選單的工具（所有人都可用）；其他工具（帳號管理）依權限
+  const PROJECT_TOOLS = ['self-check', 'plan-notes'];
+  const PAGE_TITLE = { 'self-check': '自主檢查表', 'plan-notes': '平面圖巡查筆記', accounts: '帳號管理' };
+  let shown = null;  // 目前顯示的工具
+  let ready = false; // 資料載入完成前，只能顯示封面
 
-  function showPage() {
-    const page = window.PAGES['self-check'];
+  // 重畫目前的工具（切換工地、改工地名稱後）；還沒進入工具時畫自主檢查表
+  function showPage(tool = shown || 'self-check') {
+    const page = window.PAGES[tool];
     content.innerHTML = page.render();
     page.mount(content);
-    document.title = `自主檢查表｜${window.SK_STORE.projectName()}｜酪梨營造工具箱`;
+    document.title = PROJECT_TOOLS.includes(tool)
+      ? `${PAGE_TITLE[tool]}｜${window.SK_STORE.projectName()}｜酪梨營造工具箱`
+      : `${PAGE_TITLE[tool]}｜酪梨營造工具箱`;
   }
   function renderSelect() {
     sel.innerHTML = O.projects().map(p => `<option value="${esc(p.id)}">${esc(p.name)}</option>`).join('');
@@ -158,7 +166,8 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     await O.markBackedUp();
     checkRemind();
-    return `已匯出 ${data.forms.filter(f => f.version > 0).length} 份已填寫的檢查表（共 ${data.projects.length} 個工地）`;
+    const pins = data.plans ? data.plans.pins.length : 0;
+    return `已匯出 ${data.forms.filter(f => f.version > 0).length} 份已填寫的檢查表${pins ? `、${pins} 個平面圖標記` : ''}（共 ${data.projects.length} 個工地）`;
   }
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
@@ -167,7 +176,7 @@
     let msg;
     try {
       const r = await O.importBackup(JSON.parse(await file.text()));
-      msg = `已匯入 ${r.projects} 個工地、${r.forms} 份檢查表${r.templates ? `、${r.templates} 份自訂範本` : ''}`;
+      msg = `已匯入 ${r.projects} 個工地、${r.forms} 份檢查表${r.templates ? `、${r.templates} 份自訂範本` : ''}${r.pins ? `、${r.pins} 個平面圖標記` : ''}`;
       renderSelect();
       showPage();
     } catch (e) {
@@ -499,28 +508,20 @@
   const cover = document.getElementById('cover');
   const bar = document.getElementById('olBar');
   const titleEl = bar.querySelector('.ol-title');
-  const PAGE_TITLE = { 'self-check': '自主檢查表', accounts: '帳號管理' };
-  let shown = null; // 目前顯示的工具
-  let ready = false; // 資料載入完成前，只能顯示封面
   function route() {
     const id = location.hash.replace(/^#\/?/, '');
-    const tool = ready && window.PAGES[id] && (id === 'self-check' || can(id)) ? id : null;
+    const tool = ready && window.PAGES[id] && (PROJECT_TOOLS.includes(id) || can(id)) ? id : null;
     cover.hidden = !!tool;
     bar.hidden = !tool;
     content.hidden = !tool;
-    bar.classList.toggle('ol-bar-page', !!tool && tool !== 'self-check'); // 帳號管理不需要工地選單
+    bar.classList.toggle('ol-bar-page', !!tool && !PROJECT_TOOLS.includes(tool)); // 帳號管理不需要工地選單
     if (tool && tool !== shown) {
       titleEl.textContent = PAGE_TITLE[tool] || '';
-      if (tool === 'self-check') showPage();
-      else {
-        content.innerHTML = window.PAGES[tool].render();
-        window.PAGES[tool].mount(content);
-        document.title = `${PAGE_TITLE[tool]}｜酪梨營造工具箱`;
-      }
+      showPage(tool);
     }
     shown = tool;
     checkRemind();
-    if (tool === 'self-check' && placeholder() && !dlg.open) openSetup();
+    if (PROJECT_TOOLS.includes(tool) && placeholder() && !dlg.open) openSetup();
     if (!tool) document.title = '酪梨營造工具箱';
     window.scrollTo(0, 0);
   }

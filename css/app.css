@@ -33,6 +33,7 @@ body { margin: 0; background: var(--page-bg); }
 .cv-tool b { font-size: 17px; }
 .cv-tool small { font-size: 13px; color: #6b7280; }
 .cv-tool i { font-style: normal; font-size: 26px; color: #6fa63d; }
+.cv-tool .cv-tool-emoji { flex: 0 0 48px; width: 48px; height: 48px; display: grid !important; place-items: center; font-size: 28px; background: #eef5df; border-radius: 12px; }
 .cv-soon { background: #fafbf8; border-style: dashed; color: #9aa3af; }
 .cv-soon b { color: #6b7280; }
 .cv-tool .cv-soon-icon { flex: 0 0 48px; width: 48px; height: 48px; display: grid !important; place-items: center; font-size: 22px; color: #9aa3af; background: #f1f3ee; border-radius: 12px; }

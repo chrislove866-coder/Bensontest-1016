@@ -13,6 +13,7 @@
   <meta name="apple-mobile-web-app-title" content="酪梨工具箱" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/plan-notes.css" />
 </head>
 <body>
   <!-- 酪梨營造工具箱（離線版）：資料只存在這台裝置，不需網路與伺服器 -->
@@ -28,6 +29,11 @@
       <a class="cv-tool" href="#/self-check">
         <img src="icons/icon.svg" alt="" width="48" height="48" />
         <span><b>自主檢查表</b><small>施工自主檢查・手寫簽名・PDF 列印</small></span>
+        <i aria-hidden="true">›</i>
+      </a>
+      <a class="cv-tool" href="#/plan-notes">
+        <span class="cv-tool-emoji" aria-hidden="true">🗺</span>
+        <span><b>平面圖巡查筆記</b><small>在平面圖上點位置記問題・照片・追蹤改善</small></span>
         <i aria-hidden="true">›</i>
       </a>
       <div class="cv-tool cv-soon" aria-disabled="true">
@@ -80,6 +86,7 @@
   <script src="js/pages/self-check-print.js"></script>
   <script src="js/pages/self-check-guides.js"></script>
   <script src="js/pages/self-check.js"></script>
+  <script src="js/pages/plan-notes.js"></script>
   <script src="js/app-shell.js"></script>
 </body>
 </html>
