@@ -6,7 +6,8 @@
  *      每張填樓層（例如 B2F）與圖別（建築／結構／水電…），範圍可以用手指拉四個角調整
  *   2. 在圖上點位置新增標記：狀況說明、分類（土建／水電／機電／職安）、負責單位、改善期限、發現時間、紀錄人、照片
  *   3. 改善追蹤：待改善（紅）→ 改善中（黃）→ 已改善（綠，補改善後照片）；「僅記錄」（藍）不需追蹤
- *   4. 問題清單：依狀態、分類、負責單位、樓層篩選，列印成「缺失改善通知單」（含位置圖與照片）
+ *   4. 疊圖：每張圖點兩個軸線交點對位（例如 1/A、5/E），其他圖（機電、結構）換成彩色線條、半透明疊上來確認位置
+ *   5. 問題清單：依狀態、分類、負責單位、樓層篩選，列印成「缺失改善通知單」（含位置圖與照片）
  * PDF 用 js/vendor/pdfjs（Mozilla pdf.js 3.11.174），第一次上傳 PDF 時才載入。
  */
 (function () {
@@ -167,7 +168,27 @@
         regions.push({ x0: (xs[i] + pad) / W, y0: (ys[j] + pad) / H, x1: (xs[i + 1] - pad) / W, y1: (ys[j + 1] - pad) / H });
       }
     }
-    return regions.length ? regions : full;
+    // 沒有分隔線、但兩層樓左右並排（例如水電圖，中間常有幾行註解，不會完全空白）：
+    // 範圍明顯比較寬時，在中間 30%～70% 找線條最少的一段（寬 4%），比左右兩邊都少很多就從那裡切開
+    const split = [];
+    regions.forEach(r => {
+      const X0 = Math.round(r.x0 * W), X1 = Math.round(r.x1 * W), Y0 = Math.round(r.y0 * H), Y1 = Math.round(r.y1 * H);
+      if (X1 - X0 < (Y1 - Y0) * 1.25) { split.push(r); return; } // 直的或接近正方形＝只有一層，不切
+      const col = new Float32Array(X1 - X0);
+      for (let x = X0; x < X1; x++) { let n = 0; for (let y = Y0; y < Y1; y++) n += dark[y * W + x]; col[x - X0] = n; }
+      const avg = (a, b) => { let s = 0; for (let j = a; j < b; j++) s += col[j]; return s / Math.max(1, b - a); };
+      const win = Math.max(5, Math.round(col.length * 0.04));
+      let best = null;
+      for (let i = Math.round(col.length * 0.3); i + win < col.length * 0.7; i++) {
+        const s = avg(i, i + win);
+        if (!best || s < best.s) best = { s, i };
+      }
+      if (best && best.s < 0.6 * Math.min(avg(0, best.i), avg(best.i + win, col.length))) {
+        const mid = (X0 + best.i + win / 2) / W;
+        split.push({ ...r, x1: mid }, { ...r, x0: mid });
+      } else split.push(r);
+    });
+    return split.length ? split : full;
   }
 
   /* ---------- 畫面 ---------- */
@@ -299,9 +320,109 @@
   let vp = null; // { s, x, y, minS } 目前的縮放與位置
   let addMode = false;
   let movePin = null; // 「移動位置」中的標記
+
+  /* ---------- 疊圖：每張圖點兩個軸線交點（例如 1/A、5/E）對位，其他圖依同名交點縮放、旋轉、移動後疊上來 ---------- */
+  let calMode = null;  // 對位中 { labels: ['1/A', '5/E'], pts: [] }
+  let ovOpen = false;  // 疊圖面板打開
+  let baseAlpha = 1;   // 底圖深淺
+  const ov = {};       // 各張疊圖設定 { 平面圖 id: { on, color, alpha } }（這次開啟有效）
+  const COLORS = { red: [229, 72, 77, '紅'], blue: [37, 99, 235, '藍'], green: [22, 150, 70, '綠'], purple: [147, 51, 234, '紫'], orange: [234, 120, 10, '橘'] };
+  const KIND_COLOR = { 建築: 'purple', 結構: 'green', 水電: 'red', 機電: 'blue', 其他: 'orange' };
+  const ovSet = o => (ov[o.id] = ov[o.id] || { on: false, color: KIND_COLOR[o.kind] || 'orange', alpha: 0.85 });
+  const ovScale = o => Math.min(1, 2400 / Math.max(o.w, o.h)); // 疊圖用的解析度（手機記憶體有限）
+  // 兩張圖的軸線名稱是否對得上：same 同順序、swap 順序相反、differ 名稱不同（照第 1 點對第 1 點）
+  function calMatch(base, o) {
+    const [a1, a2, b1, b2] = [base.cal.p1.label, base.cal.p2.label, o.cal.p1.label, o.cal.p2.label];
+    if (a1 && a1 === b1 && a2 === b2) return 'same';
+    if (a1 && a1 === b2 && a2 === b1) return 'swap';
+    return 'differ';
+  }
+  // 疊圖的 CSS 轉換：把疊圖（縮小 k 倍的圖片像素）對應到底圖像素
+  function ovMatrix(base, o) {
+    const P = (s, p) => [s.cal[p].x * s.w, s.cal[p].y * s.h];
+    const b1 = P(base, 'p1'), b2 = P(base, 'p2');
+    let o1 = P(o, 'p1'), o2 = P(o, 'p2');
+    if (calMatch(base, o) === 'swap') [o1, o2] = [o2, o1];
+    const vb = [b2[0] - b1[0], b2[1] - b1[1]], vo = [o2[0] - o1[0], o2[1] - o1[1]];
+    const sc = Math.hypot(...vb) / Math.hypot(...vo);
+    let th = Math.atan2(vb[1], vb[0]) - Math.atan2(vo[1], vo[0]);
+    th = Math.atan2(Math.sin(th), Math.cos(th));
+    if (Math.abs(th) < 0.06) th = 0; // 圖面幾乎不會轉角度：手指點的小誤差不要讓整張圖歪掉
+    const c = sc * Math.cos(th), sn = sc * Math.sin(th), k = ovScale(o);
+    // 以兩點的中點對齊，誤差平均分到兩邊
+    const om = [(o1[0] + o2[0]) / 2, (o1[1] + o2[1]) / 2], bm = [(b1[0] + b2[0]) / 2, (b1[1] + b2[1]) / 2];
+    const tx = bm[0] - (c * om[0] - sn * om[1]), ty = bm[1] - (sn * om[0] + c * om[1]);
+    return `matrix(${c / k},${sn / k},${-sn / k},${c / k},${tx},${ty})`;
+  }
+  // 把疊圖的線條換成顏色、白底變透明（每張圖每種顏色只做一次）
+  const tintCache = new Map();
+  function tinted(o, color) {
+    const key = `${o.id}|${color}`;
+    if (!tintCache.has(key)) {
+      tintCache.set(key, (async () => {
+        const img = await loadImage(await S().fileURL(o.id));
+        const k = ovScale(o);
+        const c = document.createElement('canvas');
+        c.width = Math.round(o.w * k); c.height = Math.round(o.h * k);
+        const g = c.getContext('2d');
+        g.drawImage(img, 0, 0, c.width, c.height);
+        const d = g.getImageData(0, 0, c.width, c.height);
+        const px = d.data, [R, G, B] = COLORS[color];
+        for (let i = 0; i < px.length; i += 4) {
+          const l = (px[i] + px[i + 1] + px[i + 2]) / 3;
+          px[i] = R; px[i + 1] = G; px[i + 2] = B;
+          px[i + 3] = Math.max(0, Math.min(255, (240 - l) * 1.8));
+        }
+        g.putImageData(d, 0, 0);
+        const blob = await new Promise((res, rej) => c.toBlob(b => (b ? res(b) : rej(new Error('疊圖產生失敗（手機記憶體不足），請少疊一張'))), 'image/png'));
+        c.width = c.height = 0;
+        return URL.createObjectURL(blob);
+      })().catch(e => { tintCache.delete(key); throw e; }));
+    }
+    return tintCache.get(key);
+  }
+  // 對位預設的軸線名稱：沿用這張或其他張已設定的名稱，兩張圖才對得上
+  function calLabels(s) {
+    const c = s.cal || (data.sheets.find(x => x.cal) || {}).cal;
+    return c ? [c.p1.label || '1/A', c.p2.label || '5/E'] : ['1/A', '5/E'];
+  }
+  function ovPanelHTML(s) {
+    const others = data.sheets.filter(x => x.id !== s.id)
+      .sort((a, b) => (a.floor === s.floor ? 0 : 1) - (b.floor === s.floor ? 0 : 1) || floorRank(b.floor) - floorRank(a.floor));
+    const row = o => {
+      const set = ovSet(o);
+      const ok = s.cal && o.cal;
+      return `<li>
+        <label class="pn-ov-name"><input type="checkbox" data-ovon="${o.id}" ${set.on && ok ? 'checked' : ''} ${ok ? '' : 'disabled'} />
+          <i class="pn-ov-dot" style="background:rgb(${COLORS[set.color].slice(0, 3)})"></i><b>${esc(o.floor)}</b>　${esc(o.kind)}<small>${esc(o.name)}</small></label>
+        ${!o.cal ? '<small class="pn-ov-warn">這張還沒對位：打開那張圖按「📐 對位」</small>' : !s.cal ? '' : `
+          <div class="pn-ov-ctl">
+            <select data-ovcolor="${o.id}" aria-label="顏色">${Object.entries(COLORS).map(([k, v]) => `<option value="${k}" ${k === set.color ? 'selected' : ''}>${v[3]}</option>`).join('')}</select>
+            <input type="range" min="0.2" max="1" step="0.05" value="${set.alpha}" data-range="${o.id}" aria-label="深淺" />
+          </div>
+          ${calMatch(s, o) === 'differ' ? `<small class="pn-ov-warn">軸線名稱不同（${esc(s.cal.p1.label)}、${esc(s.cal.p2.label)} ／ ${esc(o.cal.p1.label)}、${esc(o.cal.p2.label)}），照第 1 點對第 1 點</small>` : ''}`}
+      </li>`;
+    };
+    return `<div class="pn-ovpanel">
+      ${!s.cal ? '<p class="pn-ov-warn">這張圖還沒對位。請先按「📐 對位」，點兩個軸線交點（例如 1/A、5/E）；要疊上來的圖也要點同樣的兩個交點。</p>' : `
+        <label class="pn-ov-base">底圖深淺<input type="range" min="0.1" max="1" step="0.05" value="${baseAlpha}" data-range="base" /></label>`}
+      ${others.length ? `<ul class="pn-ov-list">${others.map(row).join('')}</ul>`
+        : '<p class="pn-hint">這個工地只有這一張圖。先上傳機電圖（PDF 有很多頁時可以選頁），對位後就能疊上來。</p>'}
+    </div>`;
+  }
+  async function saveCal(s, cal) {
+    try {
+      await S().updateSheet(s.id, { floor: s.floor, kind: s.kind, name: s.name, cal });
+      await reload();
+      ovOpen = true;
+      alertBar('對位完成');
+    } catch (e) { alertBar(e.message); }
+    renderSheet();
+  }
   function sheetHTML(s) {
     const same = data.sheets.filter(x => x.floor === s.floor).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind));
     const pins = data.pins.filter(p => p.sheet === s.id);
+    const ovOn = s.cal ? data.sheets.filter(o => o.id !== s.id && o.cal && ovSet(o).on) : [];
     return `
       <div class="pn-bar">
         <button class="sk-btn" data-pn="back">‹ 返回</button>
@@ -314,12 +435,26 @@
       </div>
       <div class="pn-tools">
         <button class="pn-add ${addMode || movePin ? 'on' : ''}" data-pn="add">${movePin ? `📍 點新位置（#${movePin.no}）・取消` : addMode ? '📍 點圖上的位置…（取消）' : '📍 新增標記'}</button>
+        <button class="sk-btn pn-tbtn ${calMode ? 'on' : ''}" data-pn="cal" title="點兩個軸線交點，讓其他圖可以疊上來">📐 對位${s.cal ? ' ✓' : ''}</button>
+        <button class="sk-btn pn-tbtn ${ovOpen ? 'on' : ''}" data-pn="ov">🧩 疊圖${ovOn.length ? `（${ovOn.length}）` : ''}</button>
         <label class="pn-toggle"><input type="checkbox" data-pn="show-done" ${showDone ? 'checked' : ''} />顯示已改善、僅記錄</label>
         <span class="pn-tools-n">${summaryHTML(pins)}</span>
       </div>
-      <div class="pn-view ${addMode || movePin ? 'pn-adding' : ''}" id="pnView">
+      ${calMode ? `<div class="pn-calbar">
+        <b>📐 對位：第 ${calMode.pts.length + 1} 點</b>
+        <label>第 1 點<input data-cal="0" value="${esc(calMode.labels[0])}" maxlength="12" ${calMode.pts.length ? 'disabled' : ''} /></label>
+        <label>第 2 點<input data-cal="1" value="${esc(calMode.labels[1])}" maxlength="12" /></label>
+        <span>先放大，再點「${esc(calMode.labels[calMode.pts.length])}」軸線交點。兩點要離遠一點（例如對角），其他圖也點同樣名稱的交點。</span>
+        <button class="sk-btn" data-pn="cal-cancel">取消</button>
+      </div>` : ''}
+      ${ovOpen && !calMode ? ovPanelHTML(s) : ''}
+      <div class="pn-view ${addMode || movePin || calMode ? 'pn-adding' : ''}" id="pnView">
         <div class="pn-stage" id="pnStage" style="width:${s.w}px;height:${s.h}px">
-          <img id="pnImg" alt="平面圖" draggable="false" />
+          <img id="pnImg" alt="平面圖" draggable="false" style="opacity:${baseAlpha}" />
+          ${ovOn.map(o => `<img class="pn-ov" data-ov="${o.id}" alt="" draggable="false"
+            style="width:${Math.round(o.w * ovScale(o))}px;height:${Math.round(o.h * ovScale(o))}px;transform:${ovMatrix(s, o)};opacity:${ovSet(o).alpha}" />`).join('')}
+          ${s.cal && (calMode || ovOpen) ? ['p1', 'p2'].map(k => `<i class="pn-cal" style="left:${s.cal[k].x * 100}%;top:${s.cal[k].y * 100}%"><span>${esc(s.cal[k].label)}</span></i>`).join('') : ''}
+          ${calMode ? calMode.pts.map(p => `<i class="pn-cal pn-cal-new" style="left:${p.x * 100}%;top:${p.y * 100}%"><span>${esc(p.label)}</span></i>`).join('') : ''}
           ${pins.filter(p => showDone || p.status === 'open' || p.status === 'doing').map(p => `
             <button class="pn-pin ${STATUS[p.status].cls} ${overdue(p) ? 'pn-pin-late' : ''}" data-pin="${p.id}" style="left:${p.x * 100}%;top:${p.y * 100}%" title="#${p.no} ${esc(p.text)}"><span>${p.no}</span></button>`).join('')}
         </div>
@@ -342,6 +477,10 @@
     vp = old ? { ...old, minS: fit * 0.8 } : { sheet: s.id, s: fit, x: (v.clientWidth - s.w * fit) / 2, y: (v.clientHeight - s.h * fit) / 2, minS: fit * 0.8 };
     applyVP();
     bindViewer(v);
+    for (const el of root.querySelectorAll('img[data-ov]')) {
+      const o = sheetOf(el.dataset.ov);
+      tinted(o, ovSet(o).color).then(u => { el.src = u; }, e => alertBar(e.message));
+    }
   }
   function applyVP() {
     const st = root && root.querySelector('#pnStage');
@@ -405,11 +544,20 @@
       start = null;
       if (!wasTap) return;
       const pinEl = target.closest && target.closest('[data-pin]');
-      if (pinEl && !addMode && !movePin) { openPin(data.pins.find(p => p.id === pinEl.dataset.pin)); return; }
-      if (!addMode && !movePin) return;
+      if (pinEl && !addMode && !movePin && !calMode) { openPin(data.pins.find(p => p.id === pinEl.dataset.pin)); return; }
+      if (!addMode && !movePin && !calMode) return;
       const s = sheetOf(sheetId);
       const x = (pos[0] - vp.x) / vp.s / s.w, y = (pos[1] - vp.y) / vp.s / s.h;
       if (x < 0 || x > 1 || y < 0 || y > 1) return;
+      if (calMode) {
+        const label = String(calMode.labels[calMode.pts.length] || '').trim() || `第${calMode.pts.length + 1}點`;
+        calMode.pts.push({ x, y, label });
+        if (calMode.pts.length < 2) { renderSheet(); return; }
+        const [p1, p2] = calMode.pts;
+        calMode = null;
+        saveCal(s, { p1, p2 });
+        return;
+      }
       if (movePin) {
         const p = movePin;
         movePin = null;
@@ -686,7 +834,7 @@
     const g = c.getContext('2d');
     g.fillStyle = '#fff';
     g.fillRect(0, 0, c.width, c.height);
-    await page.render({ canvasContext: g, viewport: vpt }).promise;
+    await page.render({ canvasContext: g, viewport: vpt, intent: 'print' }).promise; // print：不等畫面更新，背景、切換 App 時也會繼續
     crop.page = page;
     crop.pageNo = no;
     crop.canvas = c;
@@ -820,7 +968,7 @@
       c.width = Math.round(rw * scale); c.height = Math.round(rh * scale);
       g.fillStyle = '#fff';
       g.fillRect(0, 0, c.width, c.height);
-      await crop.page.render({ canvasContext: g, viewport: vpt, transform: [1, 0, 0, 1, -r.x0 * vpt.width, -r.y0 * vpt.height] }).promise;
+      await crop.page.render({ canvasContext: g, viewport: vpt, intent: 'print', transform: [1, 0, 0, 1, -r.x0 * vpt.width, -r.y0 * vpt.height] }).promise;
     } else {
       const src = crop.canvas;
       const sx = r.x0 * src.width, sy = r.y0 * src.height;
@@ -999,9 +1147,16 @@
     if (a === 'upload') fileInput().click();
     if (a === 'tab-home') { view = 'home'; rerender(); }
     if (a === 'tab-list') { view = 'list'; rerender(); }
-    if (a === 'open') { sheetId = b.dataset.id; view = 'sheet'; addMode = false; movePin = null; renderSheet(false); window.scrollTo(0, 0); }
-    if (a === 'back') { view = 'home'; addMode = false; movePin = null; rerender(); }
-    if (a === 'add') { if (movePin) movePin = null; else addMode = !addMode; renderSheet(); }
+    if (a === 'open') { sheetId = b.dataset.id; view = 'sheet'; addMode = false; movePin = null; calMode = null; renderSheet(false); window.scrollTo(0, 0); }
+    if (a === 'back') { view = 'home'; addMode = false; movePin = null; calMode = null; rerender(); }
+    if (a === 'add') { calMode = null; if (movePin) movePin = null; else addMode = !addMode; renderSheet(); }
+    if (a === 'cal') {
+      addMode = false; movePin = null;
+      calMode = calMode ? null : { labels: calLabels(sheetOf(sheetId)), pts: [] };
+      renderSheet();
+    }
+    if (a === 'cal-cancel') { calMode = null; renderSheet(); }
+    if (a === 'ov') { ovOpen = !ovOpen; renderSheet(); }
     if (a === 'sheet-edit') sheetEdit();
     if (a === 'zin' || a === 'zout') {
       const v = root.querySelector('#pnView');
@@ -1035,6 +1190,24 @@
     const f = e.target.dataset.f;
     if (f) { filter[f] = e.target.value; rerender(); }
     if (e.target.dataset.pn === 'show-done') { showDone = e.target.checked; renderSheet(); }
+    const on = e.target.dataset.ovon, color = e.target.dataset.ovcolor;
+    if (on) { ovSet(sheetOf(on)).on = e.target.checked; renderSheet(); }
+    if (color) { ovSet(sheetOf(color)).color = e.target.value; renderSheet(); }
+  }
+  // 拉桿：直接改透明度，不重畫（拖動才順）；對位的軸線名稱
+  function onInput(e) {
+    const r = e.target.dataset.range;
+    if (r === 'base') {
+      baseAlpha = +e.target.value;
+      const img = root.querySelector('#pnImg');
+      if (img) img.style.opacity = baseAlpha;
+    } else if (r) {
+      ovSet(sheetOf(r)).alpha = +e.target.value;
+      const img = root.querySelector(`img[data-ov="${r}"]`);
+      if (img) img.style.opacity = e.target.value;
+    }
+    const c = e.target.dataset.cal;
+    if (c != null && calMode) calMode.labels[+c] = e.target.value;
   }
 
   registerPage('plan-notes', {
@@ -1043,6 +1216,7 @@
       root = el.querySelector('#pnRoot');
       root.addEventListener('click', onClick);
       root.addEventListener('change', onChange);
+      root.addEventListener('input', onInput);
       view = view === 'sheet' ? 'home' : view; // 切換工地後回到樓層清單
       try {
         await reload();

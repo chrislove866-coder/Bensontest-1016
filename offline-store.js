@@ -12,7 +12,7 @@
  *             company（公司名稱，印在表頭，可空白）、customTemplates（使用者自己新增的範本 {C01: {...}}）、
  *             lastBackup（上次匯出備份的時間，用來提醒「超過 7 天沒備份」）
  *   平面圖巡查筆記（js/pages/plan-notes.js；與主網站 server/plans.py 格式相同）：
- *     sheets 表：裁掉圖框的平面圖 { id, project, floor, kind, name, w, h, createdAt }
+ *     sheets 表：裁掉圖框的平面圖 { id, project, floor, kind, name, w, h, cal（疊圖對位點，可無）, createdAt }
  *     pins 表  ：圖上的標記 { id, project, sheet, no, x, y, cat, status, text, unit, due, found, by, photos, fixPhotos, log, version… }
  *     files 表 ：圖檔與照片 { id, blob }
  * 新增工地時，自動為每份範本建立一份空白檢查表（與主網站相同）。
@@ -342,6 +342,18 @@
     if (!floor) throw new Error('請填寫樓層，例如 B2F');
     return { floor, kind: str(s.kind, 20) || '其他', name: str(s.name, 80) };
   }
+  // 疊圖對位點 {p1: {x, y, label}, p2: {...}}（與主網站 plans.clean_cal 相同）；null＝清除
+  function cleanCal(cal) {
+    if (cal == null) return null;
+    const pt = p => {
+      const x = +(p && p.x), y = +(p && p.y);
+      if (!(x >= 0 && x <= 1 && y >= 0 && y <= 1)) throw new Error('對位點要在圖面範圍內');
+      return { x, y, label: str(p.label, 12) };
+    };
+    const out = { p1: pt(cal.p1), p2: pt(cal.p2) };
+    if (Math.abs(out.p1.x - out.p2.x) + Math.abs(out.p1.y - out.p2.y) < 0.02) throw new Error('兩個對位點太近，請選相距遠一點的軸線交點');
+    return out;
+  }
   const okFile = f => typeof f === 'string' && /^[SF][0-9a-f]{16}$/.test(f);
   function cleanPin(p) {
     const text = str(p.text, 1000);
@@ -412,7 +424,11 @@
     const sheets = [];
     (plans.sheets || []).forEach(s => {
       if (!s || !okFile(s.id) || !known.has(s.project)) return;
-      try { sheets.push({ ...s, ...cleanSheet(s) }); } catch (e) {}
+      try {
+        const { cal, ...rest } = s;
+        const c = cal ? cleanCal(cal) : null;
+        sheets.push({ ...rest, ...cleanSheet(s), ...(c ? { cal: c } : {}) });
+      } catch (e) {}
     });
     const byId = new Map(sheets.map(s => [s.id, s]));
     const pins = [];
@@ -444,6 +460,10 @@
       const old = await getOne('sheets', id);
       if (!old) throw new Error('找不到這張平面圖，可能已被刪除');
       const sheet = { ...old, ...cleanSheet(s) };
+      if ('cal' in s) { // 有傳才改，沒傳保留原本的對位
+        const cal = cleanCal(s.cal);
+        if (cal) sheet.cal = cal; else delete sheet.cal;
+      }
       await tx(['sheets'], 'readwrite', t => { t.objectStore('sheets').put(sheet); });
       return sheet;
     },
