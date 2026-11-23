@@ -47,6 +47,7 @@
     return d[t] || 0;
   }
   function floorsFromName(name) {
+    name = name.replace(/ㄧ/g, '一'); // 注音「ㄧ」常被當成「一」打在檔名裡（例如 地下ㄧ層）
     const out = [];
     const re = /(?:地下|B)\s*([一二三四五六七八九十]+|\d+)|([一二三四五六七八九十]+|\d+)\s*(?:層|樓|F(?![A-Z]))|屋頂|R\d*F/gi;
     let m;
