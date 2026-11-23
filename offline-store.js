@@ -314,7 +314,7 @@
   }
 
   /* ---------- 平面圖巡查筆記（與主網站 js/server-store.js 的 PLAN_STORE 相同介面） ---------- */
-  const CATS = ['土建', '水電', '機電', '職安', '其他'];
+  const CATS = ['土建', '機電', '消防', '職安', '其他']; // 2026-11-23 水電併入機電、加消防
   const STATUSES = ['open', 'doing', 'done', 'info'];
   const pinFiles = p => [...(p.photos || []), ...(p.fixPhotos || [])];
   const getOne = (store, id) => tx([store], 'readonly', t => req(t.objectStore(store).get(id)));
@@ -361,7 +361,7 @@
     const clamp = v => Math.min(1, Math.max(0, +v || 0));
     const due = str(p.due, 10), found = str(p.found, 16);
     return {
-      x: clamp(p.x), y: clamp(p.y), cat: CATS.includes(p.cat) ? p.cat : '其他',
+      x: clamp(p.x), y: clamp(p.y), cat: p.cat === '水電' ? '機電' : CATS.includes(p.cat) ? p.cat : '其他',
       status: STATUSES.includes(p.status) ? p.status : 'open', text, unit: str(p.unit, 40),
       due: /^\d{4}-\d{2}-\d{2}$/.test(due) ? due : '', found: /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(found) ? found : '',
       by: str(p.by, 40), photos: (p.photos || []).filter(okFile).slice(0, 6), fixPhotos: (p.fixPhotos || []).filter(okFile).slice(0, 6),

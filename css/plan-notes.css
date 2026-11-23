@@ -106,7 +106,10 @@
 .pn-field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .pn-field > span { font-size: 13px; color: var(--muted); font-weight: 700; }
 .pn-field textarea, .pn-field input, .pn-field select { width: 100%; padding: 8px 10px; font: inherit; font-size: 16px; color: var(--text); border: 1px solid #d9dde4; border-radius: 8px; background: #fff; }
-.pn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.pn-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+/* iPhone Safari 的日期欄有自己的最小寬度，會超出畫面：取消原生外觀並限制寬度 */
+.pn-field input[type="date"], .pn-field input[type="datetime-local"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 42px; text-align: left; }
+.pn-field input[type="date"]::-webkit-date-and-time-value, .pn-field input[type="datetime-local"]::-webkit-date-and-time-value { text-align: left; }
 .pn-seg { display: flex; flex-wrap: wrap; gap: 6px; }
 .pn-seg button { flex: 1 1 auto; padding: 8px 10px; font-size: 14px; color: var(--c, #374151); background: #fff; border: 1px solid var(--c, #d9dde4); border-radius: 8px; }
 .pn-seg button.on { color: #fff; background: var(--c, #6fa63d); border-color: var(--c, #6fa63d); font-weight: 700; }
