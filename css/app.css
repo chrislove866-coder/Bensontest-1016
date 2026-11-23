@@ -50,6 +50,8 @@ body { margin: 0; background: var(--page-bg); }
 .ol-backup p { margin: 0; font-size: 13px; color: #4b5563; line-height: 1.6; }
 .ol-backup-actions { display: flex; flex-direction: column; gap: 8px; }
 .ol-backup-actions .ol-btn { padding: 10px 12px; font-size: 14px; text-align: left; }
+.ol-backup-actions .ol-btn-cloud { color: #fff; font-weight: 700; background: #7c3aed; border-color: #7c3aed; white-space: normal; }
+.ol-backup-actions .ol-btn-cloud:hover { color: #fff; background: #6d28d9; }
 .ol-tip { padding: 8px 10px; font-size: 12px; color: #6b5300; background: #fffbea; border: 1px solid #f3e3a1; border-radius: 6px; line-height: 1.6; }
 
 /* 備份提醒（超過 7 天沒備份） */

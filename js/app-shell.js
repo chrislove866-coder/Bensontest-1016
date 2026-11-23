@@ -141,6 +141,7 @@
         </div>
         <p>檢查表只存在這台裝置。換手機、清除瀏覽器資料或裝置故障前，請先匯出備份檔，存到電腦或雲端硬碟。</p>
         <div class="ol-backup-actions">
+          ${canShareFile ? '<button class="ol-btn ol-btn-cloud" data-share>☁️ 備份到雲端（iCloud、Google 雲端硬碟、LINE）</button>' : ''}
           <button class="ol-btn" data-export>⬇ 匯出備份檔（所有工地與檢查表）</button>
           <button class="ol-btn" data-import>⬆ 匯入備份檔</button>
         </div>
@@ -148,26 +149,61 @@
         <div class="pj-msg" ${msg ? '' : 'hidden'}>${esc(msg)}</div>
       </div>`;
   }
+  // 「備份到雲端」：用手機／電腦的分享選單把備份檔存到 iCloud、Google 雲端硬碟或傳 LINE
+  // iPhone 規定按下按鈕後要「馬上」打開分享選單，所以打開備份視窗時就先把備份檔準備好
+  const canShareFile = (() => {
+    try { return !!(navigator.canShare && navigator.canShare({ files: [new File(['{}'], 'test.json', { type: 'application/json' })] })); } catch (e) { return false; }
+  })();
+  let prepared = null; // { file, data } 打開備份視窗時準備好的備份檔
+  async function buildBackup() {
+    const data = await O.exportBackup();
+    const d = new Date();
+    const p2 = n => String(n).padStart(2, '0');
+    const stamp = `${d.getFullYear()}${p2(d.getMonth() + 1)}${p2(d.getDate())}_${p2(d.getHours())}${p2(d.getMinutes())}`;
+    const file = new File([JSON.stringify(data)], `自主檢查表備份_${stamp}.json`, { type: 'application/json' });
+    return { file, data };
+  }
+  function prepareShare() {
+    prepared = null;
+    if (!canShareFile) return;
+    buildBackup().then(r => { prepared = r; }, () => {});
+  }
+  const doneText = data => {
+    const pins = data.plans ? data.plans.pins.length : 0;
+    return `${data.forms.filter(f => f.version > 0).length} 份已填寫的檢查表${pins ? `、${pins} 個平面圖標記` : ''}（共 ${data.projects.length} 個工地）`;
+  };
   document.getElementById('olBackup').addEventListener('click', () => {
     dlg.innerHTML = backupHTML();
     dlg.showModal();
+    prepareShare();
   });
   async function exportBackup() {
-    const data = await O.exportBackup();
-    const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
-    const d = new Date();
-    const stamp = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+    const { file, data } = await buildBackup();
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `自主檢查表備份_${stamp}.json`;
+    a.href = URL.createObjectURL(file);
+    a.download = file.name;
     document.body.appendChild(a);
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     await O.markBackedUp();
     checkRemind();
-    const pins = data.plans ? data.plans.pins.length : 0;
-    return `已匯出 ${data.forms.filter(f => f.version > 0).length} 份已填寫的檢查表${pins ? `、${pins} 個平面圖標記` : ''}（共 ${data.projects.length} 個工地）`;
+    return `已匯出 ${doneText(data)}`;
+  }
+  // 不可在這之前 await（會失去「剛按下按鈕」的狀態，iPhone 就不讓開分享選單）
+  function shareBackup() {
+    if (!prepared) return Promise.resolve('備份檔準備中，請再按一次');
+    const { file, data } = prepared;
+    return navigator.share({ files: [file], title: file.name }).then(async () => {
+      await O.markBackedUp();
+      checkRemind();
+      prepareShare(); // 下次再按用新的檔案
+      return `已送出備份：${doneText(data)}。請確認雲端硬碟裡有這個檔案。`;
+    }, err => {
+      prepareShare();
+      if (err && err.name === 'AbortError') return ''; // 使用者自己取消
+      return `無法開啟分享（${err && err.message ? err.message : err}），請改用「⬇ 匯出備份檔」。`;
+    });
   }
   fileInput.addEventListener('change', async () => {
     const file = fileInput.files[0];
@@ -184,11 +220,13 @@
     }
     dlg.innerHTML = backupHTML(msg);
     if (!dlg.open) dlg.showModal();
+    prepareShare(); // 匯入後資料變了，重新準備
   });
 
   /* ---------- 視窗事件（工地管理與備份共用） ---------- */
   dlg.addEventListener('click', async e => {
     if (e.target === dlg || e.target.closest('[data-x]')) { dlg.close(); return; }
+    if (e.target.closest('[data-share]')) { dlg.innerHTML = backupHTML(await shareBackup()); return; }
     if (e.target.closest('[data-export]')) { dlg.innerHTML = backupHTML(await exportBackup()); return; }
     if (e.target.closest('[data-import]')) { fileInput.click(); return; }
     if (e.target.closest('[data-setup-del]')) {
