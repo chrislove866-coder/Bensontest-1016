@@ -101,10 +101,10 @@
         line(20, 150, 380, 150, 'gd-floor') + [0, 5, 10, 15, 20, 25].map(v => line(20 + v * 13.5, 146, 20 + v * 13.5, 154, 'gd-floor') + t(20 + v * 13.5, 168, v, 'gd-s')).join('') +
         t(390, 168, 'cm', 'gd-s', 'end') + t(200, 200, '容許差：5～10cm ±2.5、>10cm ±4cm', 'gd-r') +
         t(200, 228, '（一切依照現場環境做規劃）', 'gd-b')),
-      zh: ['設計坍度依澆置部位和輸送方式選定，填在表上（一般 12～18cm；泵送、鋼筋密的部位取較大值，坡面、樓板收面取較小值）。',
+      zh: ['設計坍度依澆置部位和輸送方式選定，填在表上（一般 12～22cm；泵送、鋼筋密的部位取較大值，坡面、樓板收面取較小值）。',
         '高強度混凝土 350kgf/cm²（約 5000psi）以上，坍度要 22～26cm，否則太快硬化、不好澆置搗實；請灌漿前跟預拌廠溝通詢問，因為各品牌配料不同，坍度太高有粒料分離的風險。',
         '每車（或依規定頻率）做坍度試驗，和設計坍度的差在容許範圍內：5～10cm ±2.5cm、10cm 以上 ±4cm；超出就退貨，不可現場加水。'],
-      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ và cách vận chuyển, ghi vào phiếu (thường 12–18cm; bơm hoặc chỗ thép dày lấy giá trị lớn, mặt dốc, hoàn thiện sàn lấy giá trị nhỏ).',
+      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ và cách vận chuyển, ghi vào phiếu (thường 12–22cm; bơm hoặc chỗ thép dày lấy giá trị lớn, mặt dốc, hoàn thiện sàn lấy giá trị nhỏ).',
         'Bê tông cường độ cao từ 350kgf/cm² (khoảng 5000psi), độ sụt cần 22–26cm, nếu không sẽ đông cứng quá nhanh, khó đổ và đầm; trước khi đổ hãy trao đổi với trạm trộn, vì mỗi hãng có cấp phối khác nhau, độ sụt quá cao có nguy cơ phân tầng cốt liệu.',
         'Mỗi xe (hoặc theo tần suất quy định) thử độ sụt, chênh lệch với độ sụt thiết kế trong dung sai: 5–10cm ±2,5cm, trên 10cm ±4cm; vượt thì trả hàng, không được thêm nước tại hiện trường.'] },
     2: { svg: svg(rect(150, 50, 100, 140, 'gd-paper') + rect(170, 70, 60, 90, 'gd-plank2') + t(200, 40, '氯離子檢測', 'gd-b') + t(200, 215, '< 0.15 kg/m³', 'gd-r')),
