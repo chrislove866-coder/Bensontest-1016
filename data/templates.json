@@ -217,7 +217,7 @@
      "小於0.15kg/m³"
     ],
     [
-     "混凝土拌合至澆置時間",
+     "混凝土拌合至澆置時間(依照預拌廠到澆鑄現場的路程時間)",
      "1.氣溫≧25°C 90分鐘以內\n2.氣溫≦25°C 120分鐘以內"
     ],
     [
@@ -274,7 +274,7 @@
       "Nhỏ hơn 0,15kg/m³"
      ],
      [
-      "Thời gian từ khi trộn đến khi đổ bê tông",
+      "Thời gian từ khi trộn đến khi đổ bê tông (theo thời gian di chuyển từ trạm trộn đến hiện trường đổ)",
       "1. Nhiệt độ ≧ 25°C: trong vòng 90 phút\n2. Nhiệt độ ≦ 25°C: trong vòng 120 phút"
      ],
      [

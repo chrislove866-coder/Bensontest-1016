@@ -112,8 +112,8 @@
       vi: ['Mỗi xe (hoặc theo quy định) đo hàm lượng ion clo hòa tan, bê tông cốt thép phải dưới 0,15 kg/m³ (hàm lượng trên mỗi mét khối bê tông).', 'Vượt thì trả hàng, ghi lại số xe và giá trị đo.'] },
     3: { svg: svg(rect(20, 20, 360, 200, 'gd-paper') + t(200, 50, '出廠時間（送貨單）→ 澆置完成', 'gd-b') +
         t(200, 110, '氣溫 ≧ 25°C：90 分鐘內', 'gd-r') + t(200, 150, '氣溫 < 25°C：120 分鐘內', 'gd-r') + t(200, 195, '看送貨單上的出廠時間，超時退貨', 'gd-s')),
-      zh: ['從拌合（送貨單出廠時間）到澆置完成：氣溫 25°C 以上 90 分鐘內、25°C 以下 120 分鐘內。', '超時的混凝土要退貨，不可加水使用。'],
-      vi: ['Từ lúc trộn (giờ xuất xưởng trên phiếu giao hàng) đến khi đổ xong: nhiệt độ từ 25°C trở lên trong 90 phút, dưới 25°C trong 120 phút.', 'Bê tông quá giờ phải trả lại, không được thêm nước để dùng.'] },
+      zh: ['從拌合（送貨單出廠時間）到澆置完成：氣溫 25°C 以上 90 分鐘內、25°C 以下 120 分鐘內。', '依預拌廠到澆置現場的路程時間安排派車與澆置速度，路程遠、塞車時段要提早和預拌廠協調。', '超時的混凝土要退貨，不可加水使用。'],
+      vi: ['Từ lúc trộn (giờ xuất xưởng trên phiếu giao hàng) đến khi đổ xong: nhiệt độ từ 25°C trở lên trong 90 phút, dưới 25°C trong 120 phút.', 'Sắp xếp xe và tốc độ đổ theo thời gian di chuyển từ trạm trộn đến hiện trường; đường xa, giờ kẹt xe phải phối hợp sớm với trạm trộn.', 'Bê tông quá giờ phải trả lại, không được thêm nước để dùng.'] },
     4: { svg: svg(rect(20, 160, 360, 40, 'gd-con') + [60, 120, 180, 240, 300, 360].map(x => line(x, 165, x, 195, 'gd-bar-thin')).join('') +
         line(30, 140, 370, 140, 'gd-pipe-b') + [100, 260].map(x => rect(x - 15, 145, 30, 15, 'gd-plank')).join('') +
         t(200, 120, '輸送管用隔墊物墊高，不壓在鋼筋、模板上', 'gd-r')),
