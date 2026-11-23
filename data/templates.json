@@ -210,7 +210,7 @@
     ],
     [
      "坍度",
-     "設計坍度 ____ cm（一般 5～22cm 視現場情況制定）\n容許差：5cm以下 ±1.5、5～10cm ±2.5、10cm以上 ±4cm"
+     "設計坍度 ____ cm（一般 5～22cm 視現場情況制定）\n容許差：5～10cm ±2.5、10cm以上 ±4cm"
     ],
     [
      "氯離子含量檢測",
@@ -267,7 +267,7 @@
      ],
      [
       "Độ sụt",
-      "Độ sụt thiết kế ____ cm (thường 5–22cm, xác định theo tình hình hiện trường)\nDung sai: dưới 5cm ±1,5, 5–10cm ±2,5, trên 10cm ±4cm"
+      "Độ sụt thiết kế ____ cm (thường 5–22cm, xác định theo tình hình hiện trường)\nDung sai: 5–10cm ±2,5, trên 10cm ±4cm"
      ],
      [
       "Kiểm tra hàm lượng ion clorua",
