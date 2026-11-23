@@ -95,22 +95,17 @@
     0: { svg: svg([110, 160, 210].map(x => rect(x, 100, 36, 72, 'gd-con')).join('') + t(178, 80, '一組 3 顆', 'gd-r') + t(200, 210, '每 100m³ 取一組（依表／契約）', 'gd-b')),
       zh: ['依表上規定每 100m³ 取一組試體（3 顆），不足 100m³ 也要取一組；契約另有規定依契約。', '試體標示日期、位置、強度，依規定養護後送驗。'],
       vi: ['Theo phiếu mỗi 100m³ lấy một tổ mẫu (3 viên), dưới 100m³ cũng phải lấy một tổ; hợp đồng có quy định khác thì theo hợp đồng.', 'Mẫu ghi ngày, vị trí, cường độ, bảo dưỡng theo quy định rồi gửi thí nghiệm.'] },
-    // 坍度分級（使用者提供，2026-11-23）：橫軸 0～26cm，x = 20 + cm × 13.5
-    1: { svg: svg([[5, 12.5, '低：道路基礎、路面', 'gd-slump1'], [12, 18, '中：一般基礎、構件', 'gd-slump2'], [18, 22, '高：樓版、密筋、泵送', 'gd-slump3'], [22, 26, '350kgf/cm²（5000psi）以上', 'gd-slump4']]
-          .map(([a, b, s, c], i) => t(20, 22 + i * 42, `${s}　${a}～${b}cm`, 'gd-b', 'start') + rect(20 + a * 13.5, 28 + i * 42, (b - a) * 13.5, 14, c)).join('') +
-        line(20, 196, 380, 196, 'gd-floor') + [0, 5, 10, 15, 20, 25].map(v => line(20 + v * 13.5, 192, 20 + v * 13.5, 200, 'gd-floor') + t(20 + v * 13.5, 213, v, 'gd-s')).join('') +
-        t(390, 213, 'cm', 'gd-s', 'end') + t(200, 235, '容許差：≦5cm ±1.5、5～10cm ±2.5、>10cm ±4cm', 'gd-r')),
-      zh: ['設計坍度依澆置部位選定，填在表上：',
-        '低坍度（約 5～12.5cm）：道路基礎、路面或較乾硬配比，流動性低、穩定性高。',
-        '中坍度（約 12～18cm）：車道、景觀區或一般基礎與構件，兼顧流動性與抗離析。',
-        '高坍度／流動性混凝土（約 18～22cm）：樓版、鋼筋較密或需泵送的結構部位，可提升搗實性、減少蜂窩，但要依規範控制上限與摻料使用。',
-        '高強度混凝土 350kgf/cm²（約 5000psi）以上：約 22～26cm，否則太快硬化、不好澆置搗實。坍度要和預拌廠配比一致。',
+    // 坍度（使用者提供文字，2026-11-23）：橫軸 0～26cm，x = 20 + cm × 13.5
+    1: { svg: svg(t(20, 30, '一般 12～22cm', 'gd-b', 'start') + rect(20 + 12 * 13.5, 40, 10 * 13.5, 18, 'gd-slump2') +
+        t(20, 90, '≧350kgf/cm²（5000psi）可上至 22～26cm', 'gd-b', 'start') + rect(20 + 22 * 13.5, 100, 4 * 13.5, 18, 'gd-slump4') +
+        line(20, 150, 380, 150, 'gd-floor') + [0, 5, 10, 15, 20, 25].map(v => line(20 + v * 13.5, 146, 20 + v * 13.5, 154, 'gd-floor') + t(20 + v * 13.5, 168, v, 'gd-s')).join('') +
+        t(390, 168, 'cm', 'gd-s', 'end') + t(200, 200, '容許差：≦5cm ±1.5、5～10cm ±2.5、>10cm ±4cm', 'gd-r') +
+        t(200, 228, '（一切依照現場環境做規劃）', 'gd-b')),
+      zh: ['設計坍度依澆置部位和輸送方式選定，填在表上（一般 12～18cm；泵送、鋼筋密的部位取較大值，坡面、樓板收面取較小值）。',
+        '高強度混凝土 350kgf/cm²（約 5000psi）以上，坍度要 22～26cm，否則太快硬化、不好澆置搗實；請灌漿前跟預拌廠溝通詢問，因為各品牌配料不同，坍度太高有粒料分離的風險。',
         '每車（或依規定頻率）做坍度試驗，和設計坍度的差在容許範圍內：5cm 以下 ±1.5cm、5～10cm ±2.5cm、10cm 以上 ±4cm；超出就退貨，不可現場加水。'],
-      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ, ghi vào phiếu:',
-        'Độ sụt thấp (khoảng 5–12,5cm): móng đường, mặt đường hoặc cấp phối khô cứng, độ chảy thấp, độ ổn định cao.',
-        'Độ sụt trung bình (khoảng 12–18cm): đường xe chạy, khu cảnh quan hoặc móng và cấu kiện thông thường, cân bằng độ chảy và chống phân tầng.',
-        'Độ sụt cao / bê tông tự chảy (khoảng 18–22cm): sàn, chỗ thép dày hoặc bộ phận kết cấu cần bơm, giúp đầm dễ, giảm rỗ tổ ong, nhưng phải khống chế giới hạn trên và phụ gia theo quy phạm.',
-        'Bê tông cường độ cao từ 350kgf/cm² (khoảng 5000psi): khoảng 22–26cm, nếu không sẽ đông cứng quá nhanh, khó đổ và đầm. Độ sụt phải khớp với cấp phối của trạm trộn.',
+      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ và cách vận chuyển, ghi vào phiếu (thường 12–18cm; bơm hoặc chỗ thép dày lấy giá trị lớn, mặt dốc, hoàn thiện sàn lấy giá trị nhỏ).',
+        'Bê tông cường độ cao từ 350kgf/cm² (khoảng 5000psi), độ sụt cần 22–26cm, nếu không sẽ đông cứng quá nhanh, khó đổ và đầm; trước khi đổ hãy trao đổi với trạm trộn, vì mỗi hãng có cấp phối khác nhau, độ sụt quá cao có nguy cơ phân tầng cốt liệu.',
         'Mỗi xe (hoặc theo tần suất quy định) thử độ sụt, chênh lệch với độ sụt thiết kế trong dung sai: dưới 5cm ±1,5cm, 5–10cm ±2,5cm, trên 10cm ±4cm; vượt thì trả hàng, không được thêm nước tại hiện trường.'] },
     2: { svg: svg(rect(150, 50, 100, 140, 'gd-paper') + rect(170, 70, 60, 90, 'gd-plank2') + t(200, 40, '氯離子檢測', 'gd-b') + t(200, 215, '< 0.15 kg/m³', 'gd-r')),
       zh: ['每車（或依規定）抽測水溶性氯離子含量，鋼筋混凝土要小於 0.15 kg/m³（每立方公尺混凝土的含量）。', '超過就退貨，並記錄車號與檢測值。'],
