@@ -52,6 +52,14 @@
 .rb-sub { margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: #6b7280; }
 .rb-top-note { margin: 8px 2px 10px; font-size: 13px; line-height: 1.6; color: #7c4a12; }
 .rb-cover { border-left-color: #e8a317; }
+.rb-c-hook { margin-bottom: 10px; border-left-color: #0f9f9a; }
+.rb-tag.rb-seis { color: #b42318; }
+.rb-chk-in { margin: 8px 0 0; padding: 6px 8px; background: #f6faf9; border-radius: 8px; }
+.rb-hk { width: 100%; margin-top: 8px; border-collapse: collapse; font-size: 14px; }
+.rb-hk th, .rb-hk td { padding: 6px 4px; border-top: 1px solid #eef0ea; text-align: left; vertical-align: top; }
+.rb-hk th { width: 118px; font-weight: 600; white-space: nowrap; }
+.rb-hk th small, .rb-hk td small { display: block; font-size: 12px; font-weight: 400; color: #6b7280; }
+.rb-hk td b { font-size: 17px; }
 .rb-cv { width: 100%; border-collapse: collapse; font-size: 14px; }
 .rb-cv th, .rb-cv td { padding: 7px 4px; border-top: 1px solid #eef0ea; vertical-align: middle; }
 .rb-cv tr:first-child th, .rb-cv tr:first-child td { border-top: 0; }
