@@ -303,7 +303,7 @@
         t(300, 30, '✘ 有空隙、單片', 'gd-ngt') +
         [0, 2].map(i => rect(225 + i * 45, 60, 34, 120, 'gd-plank')).join('') +
         line(262, 65, 262, 175, 'gd-red') + t(300, 200, '縫隙不可大於 3cm', 'gd-r')),
-      zh: ['工作台要鋪滿板料，板與板之間要密接，縫隙不可大於 3cm。',
+      zh: ['工作台要鋪滿板料，板與板之間要密接，縫隙不可大於 3cm，支撐點 2 處以上並綁牢（營造安全衛生設施標準第 48 條）。',
         '工作台寬度要 40cm 以上，不可只放一片板子。'],
       vi: ['Sàn thao tác phải lát kín bằng ván, các tấm ván liền khít nhau, khe hở không lớn hơn 3cm.',
         'Bề rộng sàn thao tác từ 40cm trở lên, không được chỉ đặt một tấm ván.'],
@@ -323,11 +323,11 @@
     3: {
       svg: svg(frames(20, 200, 6, 2, 60, 75, false) +
         [0, 1].map(j => line(140, 200 - j * 75, 200, 200 - (j + 1) * 75, 'gd-stair')).join('') +
-        t(170, 40, '上下設備（樓梯）', 'gd-r') + dimH(20, 380, 225, '每 30m 內至少 1 處', -6)),
-      zh: ['施工架每 30m 範圍內至少要有 1 處安全上下設備（施工架專用樓梯）。',
-        '不可以爬施工架的框架或交叉拉桿上下。'],
-      vi: ['Trong phạm vi 30m giàn giáo phải có ít nhất 1 lối lên xuống an toàn (cầu thang giàn giáo).',
-        'Không được leo lên xuống bằng khung giàn hoặc thanh giằng chéo.'],
+        t(170, 40, '上下設備（樓梯）', 'gd-r') + dimH(20, 170, 225, '走到樓梯 ≦ 30m', -6)),
+      zh: ['施工架上任何一處，走到最近的安全上下設備（施工架專用樓梯）不可超過 30m（營造安全衛生設施標準第 51 條）。',
+        '上下設備要和建築物牢固連接；不可以爬施工架的框架或交叉拉桿上下。'],
+      vi: ['Từ bất kỳ vị trí nào trên giàn giáo, đi đến lối lên xuống an toàn gần nhất (cầu thang giàn giáo) không quá 30m (Tiêu chuẩn an toàn vệ sinh xây dựng, Điều 51).',
+        'Lối lên xuống phải liên kết chắc với công trình; không được leo bằng khung giàn hoặc thanh giằng chéo.'],
     },
     4: {
       svg: svg(line(40, 120, 360, 120, 'gd-pipe') + rect(60, 100, 280, 14, 'gd-plank') +
@@ -346,9 +346,9 @@
         dimV(320, 60, 130, '≧ 90cm') + t(250, 40, '端部護欄', 'gd-r') +
         t(265, 155, '上欄杆＋中欄杆＋腳趾板', 'gd-s')),
       zh: ['施工架兩端的立架和轉角處，要設護欄防止人從側面掉下去。',
-        '護欄包含上欄杆（高度 90cm 以上）、中欄杆和腳趾板。'],
+        '護欄（營造安全衛生設施標準第 20 條）：上欄杆高度 90cm 以上，加中欄杆，欄杆與踏板間的開口不大於 55cm；腳趾板高 10cm 以上。'],
       vi: ['Khung đứng ở hai đầu và các góc giàn giáo phải lắp lan can để người không rơi ra từ bên hông.',
-        'Lan can gồm thanh trên (cao từ 90cm trở lên), thanh giữa và tấm chắn chân.'],
+        'Lan can (Điều 20): thanh trên cao từ 90cm trở lên, thêm thanh giữa, khe hở giữa lan can và sàn không lớn hơn 55cm; tấm chắn chân cao từ 10cm trở lên.'],
     },
     6: {
       svg: svg(line(40, 50, 360, 50, 'gd-rope') + rect(30, 40, 12, 20, 'gd-col') + rect(358, 40, 12, 20, 'gd-col') +
@@ -356,7 +356,7 @@
         `<circle cx="200" cy="120" r="14" class="gd-person"/>` + line(200, 134, 200, 190, 'gd-person-l') +
         line(200, 150, 200, 50, 'gd-lanyard') + t(212, 100, '安全帶掛在母索上', 'gd-s', 'start') +
         line(30, 200, 370, 200, 'gd-floor')),
-      zh: ['高處作業的地方要拉設安全母索，兩端固定在牢固的錨點。',
+      zh: ['高處作業的地方要拉設安全母索，兩端固定在牢固的錨點；母索斷裂強度 2,300kg 以上，安全帶不可掛在護欄上（營造安全衛生設施標準第 23 條）。',
         '作業人員的安全帶要掛在母索上，移動時也不可解開。'],
       vi: ['Nơi làm việc trên cao phải căng dây cứu sinh chính, hai đầu cố định vào điểm neo chắc chắn.',
         'Dây an toàn của công nhân phải móc vào dây cứu sinh, khi di chuyển cũng không được tháo ra.'],
@@ -367,7 +367,7 @@
         dimH(80, 230, 40, '水平 ≦ 7.5m') + dimV(255, 60, 170, '垂直 ≦ 5.5m') +
         t(200, 205, '● 壁拉桿（連接施工架與牆）', 'gd-r')),
       zh: ['壁拉桿把施工架和建築物拉在一起，防止施工架倒塌。',
-        '間距：垂直方向 5.5m 以內、水平方向 7.5m 以內各設一處。',
+        '間距：垂直方向 5.5m 以內、水平方向 7.5m 以內各設一處（營造安全衛生設施標準第 45 條）。',
         '施工中不可任意拆掉；一定要拆時先在旁邊補設。'],
       vi: ['Thanh neo tường liên kết giàn giáo với công trình, chống đổ giàn giáo.',
         'Khoảng cách: theo phương đứng trong 5,5m, phương ngang trong 7,5m bố trí một điểm.',
@@ -386,7 +386,7 @@
       svg: svg(frames(40, 210, 3, 2, 80, 80, false) + rect(270, 60, 110, 70, 'gd-sign') +
         t(325, 85, '載重限制', 'gd-b') + t(325, 108, '每層 ○○ kg', 'gd-r') + line(270, 95, 240, 95, 'gd-pipe') +
         t(140, 40, '掛在上下樓梯口等明顯處', 'gd-s')),
-      zh: ['施工架的載重限制要做成告示牌，掛在上下樓梯口等明顯、容易看到的地方。',
+      zh: ['施工架的載重限制要做成告示牌，掛在上下樓梯口等明顯、容易看到的地方（營造安全衛生設施標準第 46 條）。',
         '材料不可集中堆放在施工架上，超過限制容易倒塌。'],
       vi: ['Giới hạn tải trọng của giàn giáo phải làm bảng thông báo, treo ở nơi dễ thấy như lối lên xuống cầu thang.',
         'Không được chất vật liệu tập trung trên giàn giáo, vượt giới hạn dễ gây đổ sập.'],
@@ -398,7 +398,7 @@
         line(115, 165, 115, 120, 'gd-thread') + line(285, 165, 285, 120, 'gd-thread') +
         line(115, 120, 115, 40, 'gd-pipe') + line(285, 120, 285, 40, 'gd-pipe') + line(115, 70, 285, 70, 'gd-pipe') +
         t(160, 150, '可調型基腳座鈑', 'gd-r', 'start') + t(160, 196, '墊木', 'gd-s', 'start')),
-      zh: ['施工架底下的地面要先整平、夯實，避免下陷造成施工架歪斜。',
+      zh: ['施工架底下的地面要先整平、夯實並加襯墊，避免下陷造成施工架歪斜（營造安全衛生設施標準第 45 條）。',
         '每支立柱下方要有可調型基腳座鈑（可以調整高低），軟弱地面再加墊木分散重量。'],
       vi: ['Mặt đất dưới giàn giáo phải san phẳng, đầm chặt trước, tránh lún làm giàn giáo nghiêng.',
         'Dưới mỗi chân đứng phải có đế chân điều chỉnh (chỉnh được cao thấp); nền yếu thì kê thêm ván gỗ để phân tán tải.'],
@@ -435,7 +435,7 @@
         line(40, 25, 100, 25, 'gd-red') + line(300, 25, 360, 25, 'gd-red') + line(40, 42, 100, 42, 'gd-red') + line(300, 42, 360, 42, 'gd-red') +
         `<circle cx="200" cy="30" r="9" class="gd-lamp"/>` + t(200, 55, '夜間照明', 'gd-s') +
         t(70, 14, '安全欄杆', 'gd-r') + t(330, 14, '安全欄杆', 'gd-r')),
-      zh: ['開挖周邊要設安全欄杆，防止人員、車輛掉進開挖區。',
+      zh: ['開挖周邊要設安全欄杆、警告標示，防止人員、車輛掉進開挖區（營造安全衛生設施標準第 78 條）；開挖深度 1.5m 以上要指派作業主管。',
         '夜間或光線不足時要有照明，出入口另設警示。'],
       vi: ['Xung quanh hố đào phải lắp lan can an toàn, ngăn người và xe rơi xuống.',
         'Ban đêm hoặc thiếu sáng phải có chiếu sáng, lối ra vào có biển cảnh báo.'],
@@ -474,7 +474,7 @@
         `<path d="M310 60 Q340 72 370 60" class="gd-heave"/>` + t(340, 52, '沉陷', 'gd-r') +
         line(100, 100, 120, 130, 'gd-red') + t(130, 115, '滑動、崩落', 'gd-r', 'start') +
         t(200, 30, '每天巡查，發現異常立即停工', 'gd-b')),
-      zh: ['每天巡查開挖面和周邊：有沒有湧水、底部隆起、周邊地面沉陷或裂縫、側壁滑動崩落。',
+      zh: ['每天作業前、大雨後或四級以上地震後，巡查開挖面和周邊：有沒有湧水、底部隆起、周邊地面沉陷或裂縫、側壁滑動崩落（營造安全衛生設施標準第 65 條）。',
         '發現任何一種情形要立即停工、人員撤離，並通知工地主任處理。'],
       vi: ['Mỗi ngày kiểm tra mặt hố đào và xung quanh: có nước phun trào, đáy đẩy trồi, mặt đất xung quanh lún hoặc nứt, thành hố trượt sụt không.',
         'Phát hiện bất kỳ hiện tượng nào phải dừng thi công ngay, sơ tán người và báo chỉ huy trưởng xử lý.'],
@@ -788,5 +788,7 @@
     },
   };
 
+  // 其他批次的圖說（js/pages/guides/*.js）共用這些畫圖小工具
+  window.SK_GD = { svg, t, line, rect, dot, tick, dimH, dimV, axisV, axisH, ok, ng, ribs, frames, pit, hbeam, colSec, beamElev };
   window.SK_GUIDES = { '01': G01, '10': G10, '14': G14, '38': G38, '48': G48, '07': G07, '09': G09 };
 })();

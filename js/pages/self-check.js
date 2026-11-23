@@ -47,7 +47,7 @@
       preview: '👁 預覽／列印', save: '💾 儲存', saving: '儲存中…',
       contractor: '承攬廠商', contractorPh: '廠商名稱', sub: '協力廠商', subPh: '協力廠商（如有）',
       locPh: '例如：2F、B1 東側', date: '檢查日期', timing: '檢查時機', legend: '結果標記：',
-      guide: '🖼 看圖說', guideStd: '規定標準：', guideNote: '示意圖僅供參考，實際以設計圖說及上方規定標準為準。',
+      guide: '🖼 看圖說', guideText: '💡 說明', guideStd: '規定標準：', guideNote: '示意圖僅供參考，實際以設計圖說及上方規定標準為準。',
       std: '規定標準：', stdEdit: '✏️ 修改標準', stdEdited: '本工地已修改', stdSave: '儲存（套用到本工地）',
       stdDefault: '恢復原本的標準', stdSaved: '已修改本工地的管理標準；這一張表按「儲存」後生效。',
       stdHint: (site, name) => `會套用到「${site}」所有還沒填寫的「${name}」，之後新增的也一樣；已經填好的表不會改變。`,
@@ -89,7 +89,7 @@
       preview: '👁 Xem trước / In', save: '💾 Lưu', saving: 'Đang lưu…',
       contractor: 'Nhà thầu thi công', contractorPh: 'Tên nhà thầu', sub: 'Nhà thầu phụ', subPh: 'Nhà thầu phụ (nếu có)',
       locPh: 'VD: 2F, B1 phía Đông', date: 'Ngày kiểm tra', timing: 'Thời điểm kiểm tra', legend: 'Ký hiệu kết quả:',
-      guide: '🖼 Xem hình', guideStd: 'Tiêu chuẩn: ', guideNote: 'Hình minh họa chỉ để tham khảo, thực tế theo bản vẽ thiết kế và tiêu chuẩn ở trên.',
+      guide: '🖼 Xem hình', guideText: '💡 Giải thích', guideStd: 'Tiêu chuẩn: ', guideNote: 'Hình minh họa chỉ để tham khảo, thực tế theo bản vẽ thiết kế và tiêu chuẩn ở trên.',
       std: 'Tiêu chuẩn: ', stdEdit: '✏️ Sửa tiêu chuẩn', stdEdited: 'Công trường đã sửa', stdSave: 'Lưu (áp dụng cho công trường)',
       stdDefault: 'Khôi phục tiêu chuẩn gốc', stdSaved: 'Đã sửa tiêu chuẩn của công trường; phiếu này có hiệu lực sau khi bấm "Lưu".',
       stdHint: (site, name) => `Áp dụng cho tất cả phiếu "${name}" chưa điền của "${site}" và phiếu tạo mới; phiếu đã điền không thay đổi.`,
@@ -395,6 +395,7 @@
   }
 
   /* ---------- 看圖說（js/pages/self-check-guides.js 的示意圖；列印不會印出） ---------- */
+  // 有圖的顯示「看圖說」；只有文字說明的（例如文件、外觀類項目）顯示「說明」
   const guideOf = (f, i) => ((window.SK_GUIDES && window.SK_GUIDES[f.template]) || {})[i];
   function guideHTML(i) {
     const d = state.draft;
@@ -408,7 +409,7 @@
       </div>
       <div class="sk-dlg-body sk-guide-body">
         ${std ? `<div class="sk-guide-std">${T('guideStd')}${esc(std)}</div>` : ''}
-        <div class="sk-guide-pic">${g.svg}</div>
+        ${g.svg ? `<div class="sk-guide-pic">${g.svg}</div>` : ''}
         <ul class="sk-guide-notes">${notes.map(s => `<li>${esc(s)}</li>`).join('')}</ul>
         <p class="sk-guide-foot">${T('guideNote')}</p>
       </div>`;
@@ -435,7 +436,7 @@
     if (!std && !edit && !guide) return '';
     return `
       <div class="sk-item-std">${std ? T('std') + esc(std) : ''}${edited ? `<span class="sk-std-tag">${T('stdEdited')}</span>` : ''}${guide
-        ? `<button type="button" class="sk-guide-btn" data-act="guide" data-i="${i}">${T('guide')}</button>` : ''}${edit
+        ? `<button type="button" class="sk-guide-btn" data-act="guide" data-i="${i}">${T(guide.svg ? 'guide' : 'guideText')}</button>` : ''}${edit
         ? `<button type="button" class="sk-std-edit" data-act="std-edit" data-i="${i}">${T('stdEdit')}</button>` : ''}</div>`;
   }
 
