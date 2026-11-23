@@ -96,12 +96,15 @@
       zh: ['依表上規定每 100m³ 取一組試體（3 顆），不足 100m³ 也要取一組；契約另有規定依契約。', '試體標示日期、位置、強度，依規定養護後送驗。'],
       vi: ['Theo phiếu mỗi 100m³ lấy một tổ mẫu (3 viên), dưới 100m³ cũng phải lấy một tổ; hợp đồng có quy định khác thì theo hợp đồng.', 'Mẫu ghi ngày, vị trí, cường độ, bảo dưỡng theo quy định rồi gửi thí nghiệm.'] },
     1: { svg: svg(`<path d="M150 60 L250 60 L280 180 L120 180 Z" class="gd-paper"/>` + `<path d="M330 120 Q300 150 300 180 L380 180 Q380 150 350 120 Z" class="gd-con"/>` +
-        dimV(390, 60, 120, '坍度', 'left') + t(200, 40, '坍度筒', 'gd-s') + t(200, 215, '依配比設計（各強度不同）', 'gd-r')),
-      zh: ['每車（或依規定頻率）做坍度試驗，坍度要在配比設計的範圍內。', '表上列的 140、210、280 是混凝土強度等級，實際坍度值依各強度的配比設計。'],
-      vi: ['Mỗi xe (hoặc theo tần suất quy định) thử độ sụt, độ sụt phải nằm trong phạm vi thiết kế cấp phối.', '140, 210, 280 trên phiếu là cấp cường độ bê tông, độ sụt thực tế theo thiết kế cấp phối của từng cấp.'] },
-    2: { svg: svg(rect(150, 50, 100, 140, 'gd-paper') + rect(170, 70, 60, 90, 'gd-plank2') + t(200, 40, '氯離子檢測', 'gd-b') + t(200, 215, '≦ 0.15 kg/m³（表上單位應為 kg/m³）', 'gd-r')),
-      zh: ['每車（或依規定）抽測水溶性氯離子含量，鋼筋混凝土要小於 0.15 kg/m³。', '表上寫「kg/cm²」是壓力單位，應為「kg/m³」。'],
-      vi: ['Mỗi xe (hoặc theo quy định) đo hàm lượng ion clo hòa tan, bê tông cốt thép phải dưới 0,15 kg/m³.', 'Phiếu ghi "kg/cm²" là đơn vị áp suất, đúng ra là "kg/m³".'] },
+        dimV(390, 60, 120, '坍度', 'left') + t(200, 40, '坍度筒', 'gd-s') + t(200, 205, '設計坍度依現場選定（一般 12～18cm）', 'gd-r') +
+        t(200, 228, '容許差：≦5cm ±1.5、5～10cm ±2.5、>10cm ±4cm', 'gd-s')),
+      zh: ['設計坍度依澆置部位和輸送方式選定，填在表上（一般 12～18cm；泵送、鋼筋密的部位取較大值，坡面、樓板收面取較小值），並和預拌廠配比一致。',
+        '每車（或依規定頻率）做坍度試驗，和設計坍度的差在容許範圍內：5cm 以下 ±1.5cm、5～10cm ±2.5cm、10cm 以上 ±4cm；超出就退貨，不可現場加水。'],
+      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ và cách vận chuyển, ghi vào phiếu (thường 12–18cm; bơm hoặc chỗ thép dày lấy giá trị lớn, mặt dốc, hoàn thiện sàn lấy giá trị nhỏ), phải khớp với cấp phối của trạm trộn.',
+        'Mỗi xe (hoặc theo tần suất quy định) thử độ sụt, chênh lệch với độ sụt thiết kế trong dung sai: dưới 5cm ±1,5cm, 5–10cm ±2,5cm, trên 10cm ±4cm; vượt thì trả hàng, không được thêm nước tại hiện trường.'] },
+    2: { svg: svg(rect(150, 50, 100, 140, 'gd-paper') + rect(170, 70, 60, 90, 'gd-plank2') + t(200, 40, '氯離子檢測', 'gd-b') + t(200, 215, '< 0.15 kg/m³', 'gd-r')),
+      zh: ['每車（或依規定）抽測水溶性氯離子含量，鋼筋混凝土要小於 0.15 kg/m³（每立方公尺混凝土的含量）。', '超過就退貨，並記錄車號與檢測值。'],
+      vi: ['Mỗi xe (hoặc theo quy định) đo hàm lượng ion clo hòa tan, bê tông cốt thép phải dưới 0,15 kg/m³ (hàm lượng trên mỗi mét khối bê tông).', 'Vượt thì trả hàng, ghi lại số xe và giá trị đo.'] },
     3: { svg: svg(rect(20, 20, 360, 200, 'gd-paper') + t(200, 50, '出廠時間（送貨單）→ 澆置完成', 'gd-b') +
         t(200, 110, '氣溫 ≧ 25°C：90 分鐘內', 'gd-r') + t(200, 150, '氣溫 < 25°C：120 分鐘內', 'gd-r') + t(200, 195, '看送貨單上的出廠時間，超時退貨', 'gd-s')),
       zh: ['從拌合（送貨單出廠時間）到澆置完成：氣溫 25°C 以上 90 分鐘內、25°C 以下 120 分鐘內。', '超時的混凝土要退貨，不可加水使用。'],
