@@ -1,0 +1,85 @@
+/* 鋼筋快查（js/pages/rebar.js；主網站與離線版共用） */
+.rb { --rb: #2f5a1c; --rb-l: #eef5df; --rb-top: #c4600e; max-width: 1100px; margin: 0 auto; }
+.rb-head h2 { display: none; } /* 上方工具列已有標題 */
+.rb-head p { margin: 0 0 10px; font-size: 13px; color: var(--muted); }
+.rb-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+@media (min-width: 900px) {
+  .rb-grid { grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: start; }
+  #rbIn { position: sticky; top: 70px; }
+}
+
+/* 輸入 */
+.rb-in { padding: 12px 14px; background: #fff; border: 1px solid #e3e8dc; border-radius: 14px; }
+.rb-row + .rb-row { margin-top: 12px; }
+.rb-row h3 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 0 0 6px; font-size: 15px; }
+.rb-row h3 small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.rb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.rb-bars { display: grid; grid-template-columns: repeat(auto-fill, minmax(56px, 1fr)); }
+.rb-fys { display: grid; grid-template-columns: repeat(4, 1fr); }
+.rb-chip { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 52px; min-height: 42px; padding: 3px 8px;
+  font-size: 16px; font-weight: 700; color: #374151; background: #f7f8f5; border: 1.5px solid #dfe5d6; border-radius: 10px; }
+.rb-chip small { font-size: 11px; font-weight: 400; color: #6b7280; }
+.rb-chip.on { color: #fff; background: var(--rb); border-color: var(--rb); }
+.rb-chip.on small { color: #dfeccb; }
+.rb-other { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 8px; font-size: 14px; color: #374151;
+  background: #f7f8f5; border: 1.5px solid #dfe5d6; border-radius: 10px; }
+.rb-other.on { border-color: var(--rb); background: var(--rb-l); }
+.rb-other input { width: 72px; padding: 6px; font-size: 16px; border: 1px solid #cfd6c4; border-radius: 6px; }
+.rb-adv { margin-top: 14px; padding-top: 10px; border-top: 1px dashed #dfe5d6; }
+.rb-adv summary { cursor: pointer; font-size: 14px; color: #4b5563; }
+.rb-adv summary i { margin-left: 8px; padding: 1px 8px; font-style: normal; font-size: 12px; color: #fff; background: var(--rb-top); border-radius: 10px; }
+.rb-chk { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px; margin-top: 10px; font-size: 14px; line-height: 1.5; }
+.rb-chk input[type=checkbox] { width: 20px; height: 20px; margin-top: 1px; flex-shrink: 0; }
+.rb-chk span { flex: 1 1 200px; }
+.rb-chk small { display: block; font-size: 12px; color: var(--muted); }
+.rb-chk select { flex: 1 1 100%; padding: 8px; font-size: 15px; border: 1px solid #cfd6c4; border-radius: 8px; background: #fff; }
+
+/* 結果 */
+.rb-sum { margin-bottom: 8px; padding: 8px 12px; font-size: 14px; font-weight: 700; color: var(--rb); background: var(--rb-l); border-radius: 10px; }
+.rb-cards { display: grid; gap: 10px; }
+.rb-card { padding: 10px 14px 12px; background: #fff; border: 1px solid #e3e8dc; border-left: 5px solid var(--rb); border-radius: 12px; }
+.rb-c-lap { border-left-color: #2f7bf5; }
+.rb-c-col { border-left-color: #8b5cf6; }
+.rb-card h4 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin: 0 0 8px; font-size: 16px; }
+.rb-card h4 small { font-size: 12px; font-weight: 400; color: var(--muted); }
+.rb-two { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rb-two > div { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 4px; padding: 6px 10px; background: #f9faf7; border-radius: 10px; }
+.rb-two b { font-size: 34px; line-height: 1.1; color: #111827; font-variant-numeric: tabular-nums; }
+.rb-u { font-size: 14px; color: #4b5563; }
+.rb-two em { flex-basis: 100%; font-style: normal; font-size: 12px; color: #6b7280; }
+.rb-tag { flex-basis: 100%; font-size: 13px; font-weight: 700; color: #4b5563; }
+.rb-tag.rb-top { color: var(--rb-top); }
+.rb-sub { margin: 8px 0 0; font-size: 12px; line-height: 1.6; color: #6b7280; }
+.rb-top-note { margin: 8px 2px 10px; font-size: 13px; line-height: 1.6; color: #7c4a12; }
+.rb-cover { border-left-color: #e8a317; }
+.rb-cv { width: 100%; border-collapse: collapse; font-size: 14px; }
+.rb-cv th, .rb-cv td { padding: 7px 4px; border-top: 1px solid #eef0ea; vertical-align: middle; }
+.rb-cv tr:first-child th, .rb-cv tr:first-child td { border-top: 0; }
+.rb-cv th { text-align: left; font-weight: 600; }
+.rb-cv th small, .rb-cv td small { display: block; font-size: 12px; font-weight: 400; color: #6b7280; }
+.rb-cv td { width: 92px; text-align: right; white-space: nowrap; }
+.rb-cv td b { font-size: 22px; }
+.rb-notes { margin: 10px 0 0; padding: 8px 12px 8px 28px; font-size: 13px; line-height: 1.6; color: #7c4a12; background: #fff7e2; border-radius: 10px; }
+.rb-more { margin-top: 10px; background: #fff; border: 1px solid #e3e8dc; border-radius: 12px; }
+.rb-more summary { cursor: pointer; padding: 10px 14px; font-size: 15px; font-weight: 600; }
+.rb-more[open] summary { border-bottom: 1px solid #eef0ea; }
+.rb-more > :not(summary) { margin-left: 12px; margin-right: 12px; }
+.rb-tbl-wrap { overflow-x: auto; margin-top: 8px; }
+.rb-tbl { width: 100%; border-collapse: collapse; font-size: 14px; text-align: center; font-variant-numeric: tabular-nums; }
+.rb-tbl th, .rb-tbl td { padding: 6px 4px; border: 1px solid #e5e9df; }
+.rb-tbl thead th { background: #f4f7ee; font-size: 13px; }
+.rb-tbl tbody th small { display: block; font-size: 11px; font-weight: 400; color: #6b7280; }
+.rb-tbl tbody tr { cursor: pointer; }
+.rb-tbl tbody tr.on { background: #fff3d6; font-weight: 700; }
+.rb-f { padding: 4px 0 12px; font-size: 13px; line-height: 1.6; }
+.rb-f p { margin: 10px 0 2px; }
+.rb-f code { display: block; padding: 3px 8px; font-family: inherit; font-size: 13px; background: #f6f7f4; border-radius: 6px; overflow-wrap: anywhere; }
+.rb-f code + code { margin-top: 2px; }
+.rb-f h5 { margin: 14px 0 2px; font-size: 14px; color: var(--rb); }
+.rb-f ul { margin: 0; padding-left: 20px; }
+.rb-warn { margin: 12px 0 4px; padding: 8px 12px; font-size: 13px; line-height: 1.6; color: #7a271a; background: #fdecec; border-radius: 10px; }
+@media (max-width: 420px) {
+  .rb-two b { font-size: 28px; }
+  .rb-chip { min-width: 0; padding: 3px 4px; font-size: 15px; }
+  .rb-in { padding: 10px; }
+}

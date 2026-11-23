@@ -22,7 +22,9 @@
   const can = key => !O.can || O.can(key);
   // 跟著上方「工地」選單的工具（所有人都可用）；其他工具（帳號管理）依權限
   const PROJECT_TOOLS = ['self-check', 'plan-notes'];
-  const PAGE_TITLE = { 'self-check': '自主檢查表', 'plan-notes': '平面圖巡查筆記', accounts: '帳號管理' };
+  // 不需要工地、所有人都可用的工具（鋼筋快查）
+  const OPEN_TOOLS = ['rebar'];
+  const PAGE_TITLE = { 'self-check': '自主檢查表', 'plan-notes': '平面圖巡查筆記', rebar: '鋼筋快查', accounts: '帳號管理' };
   let shown = null;  // 目前顯示的工具
   let ready = false; // 資料載入完成前，只能顯示封面
 
@@ -548,7 +550,7 @@
   const titleEl = bar.querySelector('.ol-title');
   function route() {
     const id = location.hash.replace(/^#\/?/, '');
-    const tool = ready && window.PAGES[id] && (PROJECT_TOOLS.includes(id) || can(id)) ? id : null;
+    const tool = ready && window.PAGES[id] && (PROJECT_TOOLS.includes(id) || OPEN_TOOLS.includes(id) || can(id)) ? id : null;
     cover.hidden = !!tool;
     bar.hidden = !tool;
     content.hidden = !tool;
