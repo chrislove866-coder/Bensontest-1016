@@ -96,11 +96,11 @@
       zh: ['依表上規定每 100m³ 取一組試體（3 顆），不足 100m³ 也要取一組；契約另有規定依契約。', '試體標示日期、位置、強度，依規定養護後送驗。'],
       vi: ['Theo phiếu mỗi 100m³ lấy một tổ mẫu (3 viên), dưới 100m³ cũng phải lấy một tổ; hợp đồng có quy định khác thì theo hợp đồng.', 'Mẫu ghi ngày, vị trí, cường độ, bảo dưỡng theo quy định rồi gửi thí nghiệm.'] },
     1: { svg: svg(`<path d="M150 60 L250 60 L280 180 L120 180 Z" class="gd-paper"/>` + `<path d="M330 120 Q300 150 300 180 L380 180 Q380 150 350 120 Z" class="gd-con"/>` +
-        dimV(390, 60, 120, '坍度', 'left') + t(200, 40, '坍度筒', 'gd-s') + t(200, 205, '設計坍度依現場選定（一般 12～18cm）', 'gd-r') +
+        dimV(390, 60, 120, '坍度', 'left') + t(200, 40, '坍度筒', 'gd-s') + t(200, 205, '一般 12～18cm；≧350kgf/cm²（5000psi）22～26cm', 'gd-r') +
         t(200, 228, '容許差：≦5cm ±1.5、5～10cm ±2.5、>10cm ±4cm', 'gd-s')),
-      zh: ['設計坍度依澆置部位和輸送方式選定，填在表上（一般 12～18cm；泵送、鋼筋密的部位取較大值，坡面、樓板收面取較小值），並和預拌廠配比一致。',
+      zh: ['設計坍度依澆置部位和輸送方式選定，填在表上（一般 12～18cm；泵送、鋼筋密的部位取較大值，坡面、樓板收面取較小值）。', '高強度混凝土 350kgf/cm²（約 5000psi）以上，坍度要 22～26cm，否則太快硬化、不好澆置搗實；坍度要和預拌廠配比一致。',
         '每車（或依規定頻率）做坍度試驗，和設計坍度的差在容許範圍內：5cm 以下 ±1.5cm、5～10cm ±2.5cm、10cm 以上 ±4cm；超出就退貨，不可現場加水。'],
-      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ và cách vận chuyển, ghi vào phiếu (thường 12–18cm; bơm hoặc chỗ thép dày lấy giá trị lớn, mặt dốc, hoàn thiện sàn lấy giá trị nhỏ), phải khớp với cấp phối của trạm trộn.',
+      vi: ['Độ sụt thiết kế chọn theo bộ phận đổ và cách vận chuyển, ghi vào phiếu (thường 12–18cm; bơm hoặc chỗ thép dày lấy giá trị lớn, mặt dốc, hoàn thiện sàn lấy giá trị nhỏ).', 'Bê tông cường độ cao từ 350kgf/cm² (khoảng 5000psi) trở lên, độ sụt cần 22–26cm, nếu không sẽ đông cứng quá nhanh, khó đổ và đầm; độ sụt phải khớp với cấp phối của trạm trộn.',
         'Mỗi xe (hoặc theo tần suất quy định) thử độ sụt, chênh lệch với độ sụt thiết kế trong dung sai: dưới 5cm ±1,5cm, 5–10cm ±2,5cm, trên 10cm ±4cm; vượt thì trả hàng, không được thêm nước tại hiện trường.'] },
     2: { svg: svg(rect(150, 50, 100, 140, 'gd-paper') + rect(170, 70, 60, 90, 'gd-plank2') + t(200, 40, '氯離子檢測', 'gd-b') + t(200, 215, '< 0.15 kg/m³', 'gd-r')),
       zh: ['每車（或依規定）抽測水溶性氯離子含量，鋼筋混凝土要小於 0.15 kg/m³（每立方公尺混凝土的含量）。', '超過就退貨，並記錄車號與檢測值。'],

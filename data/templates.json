@@ -210,7 +210,7 @@
     ],
     [
      "坍度",
-     "設計坍度 ____ cm（依澆置部位、輸送方式選定，一般 12～18cm）\n容許差：5cm以下 ±1.5cm、5～10cm ±2.5cm、10cm以上 ±4cm"
+     "設計坍度 ____ cm（一般 12～18cm；350kgf/cm²〔5000psi〕以上 22～26cm）\n容許差：5cm以下 ±1.5、5～10cm ±2.5、10cm以上 ±4cm"
     ],
     [
      "氯離子含量檢測",
@@ -267,7 +267,7 @@
      ],
      [
       "Độ sụt",
-      "Độ sụt thiết kế ____ cm (chọn theo bộ phận đổ, cách vận chuyển, thường 12–18cm)\nDung sai: dưới 5cm ±1,5cm, 5–10cm ±2,5cm, trên 10cm ±4cm"
+      "Độ sụt thiết kế ____ cm (thường 12–18cm; từ 350kgf/cm² [5000psi] 22–26cm)\nDung sai: dưới 5cm ±1,5, 5–10cm ±2,5, trên 10cm ±4cm"
      ],
      [
       "Kiểm tra hàm lượng ion clorua",
