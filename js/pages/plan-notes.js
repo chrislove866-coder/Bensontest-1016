@@ -853,6 +853,7 @@
   async function startCrop(file) {
     const d = cropDialog();
     crop = { name: file.name, busy: true };
+    cropZoom = window.innerWidth < 600 ? 1.5 : 1; // 手機一開始就放大一些
     d.innerHTML = '<div class="pn-crop-loading">讀取中…（PDF 第一次要載入讀取元件，請稍等）</div>';
     if (!d.open) d.showModal();
     try {
@@ -881,8 +882,11 @@
       d.innerHTML = `<div class="pn-crop-loading">無法讀取這個檔案：${esc(e.message)}<br /><button class="sk-btn" data-crop="close">關閉</button></div>`;
     }
   }
+  let cropZoom = 1; // 裁切預覽放大倍數（1～3），放大後可以用手指捲動
   function renderCrop(msg = '') {
     const d = cropDialog();
+    const oldWrap = d.querySelector('#pnCropWrap');
+    const keep = oldWrap ? [oldWrap.scrollLeft, oldWrap.scrollTop] : null;
     const floors = [...new Set(data.sheets.map(s => s.floor))];
     d.innerHTML = `
       <div class="sk-dlg-head">
@@ -893,16 +897,24 @@
         <button class="sk-dlg-x" type="button" data-crop="close" aria-label="關閉">✕</button>
       </div>
       <div class="sk-dlg-body">
-        <p class="pn-hint">已自動去掉圖框與標題欄。框框以外的地方不會存起來；拉<b>四個角的圓點</b>可以調整範圍，拉框框中間可以移動。</p>
+        <p class="pn-hint">已自動去掉圖框與標題欄，框框以外不會存起來。拉<b>四個角的圓點</b>調整範圍、拉<b>左上角的標籤</b>移動整個框；按「＋」放大預覽，用手指捲動。</p>
         ${crop.pages > 1 ? `<label class="pn-field pn-page"><span>這個 PDF 有 ${crop.pages} 頁，選要裁切的頁</span>
           <select data-page="1">${Array.from({ length: crop.pages }, (_, i) => `<option value="${i + 1}" ${i + 1 === crop.pageNo ? 'selected' : ''}>第 ${i + 1} 頁</option>`).join('')}</select></label>` : ''}
-        <div class="pn-crop" id="pnCrop">
+        <div class="pn-crop-zoom">
+          <span>預覽</span>
+          <button type="button" class="sk-btn" data-crop="zout" aria-label="縮小預覽">－</button>
+          <b id="pnCropZ">${Math.round(cropZoom * 100)}%</b>
+          <button type="button" class="sk-btn" data-crop="zin" aria-label="放大預覽">＋</button>
+        </div>
+        <div class="pn-crop-wrap" id="pnCropWrap">
+        <div class="pn-crop" id="pnCrop" style="width:${cropZoom * 100}%">
           <img src="${crop.preview}" alt="整張圖" draggable="false" />
           ${crop.regions.map((r, i) => `
             <div class="pn-rect" data-r="${i}" style="left:${r.x0 * 100}%;top:${r.y0 * 100}%;width:${(r.x1 - r.x0) * 100}%;height:${(r.y1 - r.y0) * 100}%">
               <span class="pn-rect-label">${i + 1}. ${esc(r.floor || '樓層？')}</span>
               ${['nw', 'ne', 'sw', 'se'].map(h => `<i class="pn-h pn-h-${h}" data-h="${h}"></i>`).join('')}
             </div>`).join('')}
+        </div>
         </div>
         <datalist id="pnFloors">${[...new Set([...floors, 'B3F', 'B2F', 'B1F', '1F', '2F', '3F', 'RF'])].map(f => `<option value="${esc(f)}"></option>`).join('')}</datalist>
         <ol class="pn-regions">${crop.regions.map((r, i) => `
@@ -925,6 +937,19 @@
         <button type="button" class="sk-btn" data-crop="close">取消</button>
         <button type="button" class="sk-btn sk-btn-primary" data-crop="save" ${crop.regions.length ? '' : 'disabled'}>💾 儲存 ${crop.regions.length} 張平面圖</button>
       </div>`;
+    if (keep) { const w = d.querySelector('#pnCropWrap'); w.scrollLeft = keep[0]; w.scrollTop = keep[1]; }
+  }
+  // 放大縮小預覽：以目前看到的中心為準，不重畫整個視窗（輸入中的文字不會跳掉）
+  function zoomCrop(k) {
+    const w = cropDlg.querySelector('#pnCropWrap'), c = cropDlg.querySelector('#pnCrop');
+    const z = Math.min(3, Math.max(1, cropZoom + k)); // 每按一次 ±50%
+    if (z === cropZoom) return;
+    const cx = (w.scrollLeft + w.clientWidth / 2) / c.offsetWidth, cy = (w.scrollTop + w.clientHeight / 2) / c.offsetHeight;
+    cropZoom = z;
+    c.style.width = `${z * 100}%`;
+    cropDlg.querySelector('#pnCropZ').textContent = `${Math.round(z * 100)}%`;
+    w.scrollLeft = cx * c.offsetWidth - w.clientWidth / 2;
+    w.scrollTop = cy * c.offsetHeight - w.clientHeight / 2;
   }
   // 拉角落調整、拉中間移動（座標用 0～1，對應整張圖）
   function bindCropDrag(d) {
@@ -989,6 +1014,7 @@
     const a = b.dataset.crop;
     if (a === 'close') { if (crop && crop.busy) return; crop = null; cropDlg.close(); return; }
     if (!crop || crop.busy) return;
+    if (a === 'zin' || a === 'zout') { zoomCrop(a === 'zin' ? 0.5 : -0.5); return; }
     if (a === 'del') { crop.regions.splice(+b.dataset.i, 1); renderCrop(); }
     if (a === 'add') {
       const last = crop.regions[crop.regions.length - 1];

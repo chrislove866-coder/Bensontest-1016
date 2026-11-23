@@ -134,18 +134,25 @@
 /* 裁切 */
 .pn-crop-dlg { width: min(980px, calc(100vw - 16px)); }
 .pn-crop-loading { padding: 40px 20px; text-align: center; color: #4b5563; line-height: 2; }
-.pn-crop { position: relative; background: #f3f4f6; border: 1px solid #e5e7eb; touch-action: none; user-select: none; -webkit-user-select: none; }
+.pn-crop { position: relative; background: #f3f4f6; border: 1px solid #e5e7eb; touch-action: pan-x pan-y; user-select: none; -webkit-user-select: none; }
+/* 預覽放大後在這個框裡捲動；圖面本身可以用手指捲動，框只有圓點、標籤可以拖 */
+.pn-crop-wrap { flex-shrink: 0; max-height: 68vh; max-height: 68dvh; overflow: auto; -webkit-overflow-scrolling: touch; padding: 16px; background: #fafafa; border: 1px solid #eef0f3; border-radius: 8px; }
+.pn-crop-zoom { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.pn-crop-zoom .sk-btn { min-width: 44px; padding: 6px 12px; font-size: 18px; line-height: 1; }
+.pn-crop-zoom b { min-width: 46px; text-align: center; color: var(--text); }
 .pn-crop img { display: block; width: 100%; height: auto; opacity: .6; pointer-events: none; }
-.pn-rect { position: absolute; box-sizing: border-box; border: 3px solid #e5484d; background: rgba(229, 72, 77, .07); cursor: move; touch-action: none; }
-.pn-crop { overflow: hidden; flex-shrink: 0; }
+.pn-rect { position: absolute; box-sizing: border-box; border: 3px solid #e5484d; background: rgba(229, 72, 77, .07); pointer-events: none; }
+.pn-crop { flex-shrink: 0; } /* 不裁掉邊緣的圓點（外框 .pn-crop-wrap 留了空間） */
 /* 視窗內容比畫面高時，不要把預覽圖、清單壓扁（iPhone 會把裁切預覽壓到只剩上半部） */
 .pn-crop-dlg .sk-dlg-body > *, .pn-dialog .sk-dlg-body > * { flex-shrink: 0; }
-.pn-rect-label { position: absolute; left: 4px; top: 4px; padding: 2px 8px; font-size: 13px; font-weight: 700; color: #fff; background: #e5484d; border-radius: 6px; pointer-events: none; }
-.pn-h { position: absolute; width: 26px; height: 26px; margin: -13px; background: #fff; border: 3px solid #e5484d; border-radius: 50%; touch-action: none; }
+.pn-rect-label { position: absolute; left: 16px; top: 6px; padding: 6px 12px; font-size: 14px; font-weight: 700; color: #fff; background: #e5484d; border-radius: 8px; pointer-events: auto; touch-action: none; cursor: move; white-space: nowrap; }
+.pn-rect-label::before { content: '✥ '; }
+.pn-h { position: absolute; width: 30px; height: 30px; margin: -15px; background: #fff; border: 4px solid #e5484d; border-radius: 50%; box-sizing: border-box; pointer-events: auto; touch-action: none; z-index: 1; }
+.pn-h::after { content: ''; position: absolute; inset: -12px; border-radius: 50%; } /* 手指點的範圍比看到的圓點大 */
 .pn-h-nw { left: 0; top: 0; cursor: nwse-resize; }
-.pn-h-ne { right: 0; top: 0; margin-right: -13px; cursor: nesw-resize; }
-.pn-h-sw { left: 0; bottom: 0; margin-bottom: -13px; cursor: nesw-resize; }
-.pn-h-se { right: 0; bottom: 0; margin: 0 -13px -13px 0; cursor: nwse-resize; }
+.pn-h-ne { right: 0; top: 0; margin-right: -15px; cursor: nesw-resize; }
+.pn-h-sw { left: 0; bottom: 0; margin-bottom: -15px; cursor: nesw-resize; }
+.pn-h-se { right: 0; bottom: 0; margin: 0 -15px -15px 0; cursor: nwse-resize; }
 .pn-regions { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .pn-regions li { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; padding: 8px 10px; background: #fff7f7; border: 1px solid #f6c4c4; border-radius: 8px; }
 .pn-regions label { display: flex; flex-direction: column; gap: 3px; font-size: 12px; color: var(--muted); }
@@ -212,3 +219,12 @@
 .pn-cal::after { left: -1px; top: -14px; width: 2px; height: 28px; }
 .pn-cal span { position: absolute; left: 0; top: 0; padding: 1px 6px; font-size: 12px; font-weight: 700; color: #fff; white-space: nowrap; background: #e5484d; border-radius: 6px; transform: scale(var(--inv)) translate(8px, 8px); transform-origin: 0 0; }
 .pn-cal-new::before, .pn-cal-new::after, .pn-cal-new span { background: #2563eb; }
+
+/* 手機：裁切視窗佔滿整個畫面，預覽才夠大 */
+@media (max-width: 600px) {
+  .pn-crop-dlg { width: 100vw; max-width: 100vw; height: 100vh; height: 100dvh; max-height: 100dvh; margin: 0; border-radius: 0; }
+  .pn-crop-dlg .sk-dlg-head { padding: 10px 14px; }
+  .pn-crop-dlg .sk-dlg-body { padding: 10px 12px; gap: 10px; }
+  .pn-crop-dlg .pn-hint { font-size: 12px; }
+  .pn-crop-dlg .pn-regions li { padding: 6px 8px; }
+}
