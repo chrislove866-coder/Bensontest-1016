@@ -1309,3 +1309,7 @@ button { font: inherit; cursor: pointer; }
 .gd-w-green { stroke: #16a34a; stroke-width: 8; stroke-linecap: round; }
 .gd-w-white { stroke: #d1d5db; stroke-width: 8; stroke-linecap: round; }
 .gd-w-black { stroke: #111827; stroke-width: 8; stroke-linecap: round; }
+.gd-slump1 { fill: #a3e635; }
+.gd-slump2 { fill: #facc15; }
+.gd-slump3 { fill: #fb923c; }
+.gd-slump4 { fill: #ef4444; }
