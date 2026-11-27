@@ -7,7 +7,8 @@
  *      每張填樓層（例如 B2F）與圖別（建築／結構／水電…），範圍可以用手指拉四個角調整
  *   2. 在圖上點位置新增標記：狀況說明、分類（土建／機電／消防／職安）、負責單位、改善期限、發現時間、紀錄人、照片
  *   3. 改善追蹤：待改善（紅）→ 改善中（黃）→ 已改善（綠，補改善後照片）；「僅記錄」（藍）不需追蹤
- *   4. 疊圖：每張圖點兩個軸線交點對位（例如 1/A、5/E），其他圖（機電、結構）換成彩色線條、半透明疊上來確認位置
+ *   4. 疊圖比對（另一頁 #/overlay，2026-11-27 從巡查畫面拆出來）：選兩張圖 → 紙張大小對比例、圖框粗對位 →
+ *      拖曳或點同一點對齊 → 一起裁切存成一組（舊的每張圖兩點對位 cal 資料保留但畫面已不使用）
  *   5. 問題清單：依狀態、分類、負責單位、樓層篩選，列印成「缺失改善通知單」（含位置圖與照片）
  * PDF 用 js/vendor/pdfjs（Mozilla pdf.js 3.11.174），第一次上傳 PDF 時才載入。
  */
@@ -151,9 +152,11 @@
     const hl = lines(longest(H, W, rowAt), 0.6);
     const vl = lines(longest(W, H, colAt), 0.6);
     const full = [{ x0: 0.01, y0: 0.01, x1: 0.99, y1: 0.99 }];
+    detectRegions.frame = null; // 外框位置（0～1），疊圖比對用來粗對位
     if (hl.length < 2 || vl.length < 2) return full; // 找不到外框（例如手機拍的照片），先用整張
     let top = hl[0], bottom = hl[hl.length - 1], left = vl[0], right = vl[vl.length - 1];
     if (bottom - top < H * 0.3 || right - left < W * 0.3) return full;
+    detectRegions.frame = { x0: left / W, y0: top / H, x1: right / W, y1: bottom / H };
     // 標題欄：外框下方 25% 內最上面那條橫線；沒有的話看右側 25%（直式標題欄）
     const lowH = hl.filter(y => y > top + (bottom - top) * 0.75 && y < bottom - 2);
     const rightV = vl.filter(x => x > left + (right - left) * 0.75 && x < right - 2);
@@ -426,7 +429,6 @@
   function sheetHTML(s) {
     const same = data.sheets.filter(x => x.floor === s.floor).sort((a, b) => KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind));
     const pins = data.pins.filter(p => p.sheet === s.id);
-    const ovOn = s.cal ? data.sheets.filter(o => o.id !== s.id && o.cal && ovSet(o).on) : [];
     return `
       <div class="pn-bar">
         <button class="sk-btn" data-pn="back">‹ 返回</button>
@@ -439,26 +441,13 @@
       </div>
       <div class="pn-tools">
         <button class="pn-add ${addMode || movePin ? 'on' : ''}" data-pn="add">${movePin ? `📍 點新位置（#${movePin.no}）・取消` : addMode ? '📍 點圖上的位置…（取消）' : '📍 新增標記'}</button>
-        <button class="sk-btn pn-tbtn ${calMode ? 'on' : ''}" data-pn="cal" title="點兩個軸線交點，讓其他圖可以疊上來">📐 對位${s.cal ? ' ✓' : ''}</button>
-        <button class="sk-btn pn-tbtn ${ovOpen ? 'on' : ''}" data-pn="ov">🧩 疊圖${ovOn.length ? `（${ovOn.length}）` : ''}</button>
+        <a class="sk-btn pn-tbtn" href="#/overlay" title="把機電、結構圖疊上來確認位置">🧩 疊圖比對</a>
         <label class="pn-toggle"><input type="checkbox" data-pn="show-done" ${showDone ? 'checked' : ''} />顯示已改善、僅記錄</label>
         <span class="pn-tools-n">${summaryHTML(pins)}</span>
       </div>
-      ${calMode ? `<div class="pn-calbar">
-        <b>📐 對位：第 ${calMode.pts.length + 1} 點</b>
-        <label>第 1 點<input data-cal="0" value="${esc(calMode.labels[0])}" maxlength="12" ${calMode.pts.length ? 'disabled' : ''} /></label>
-        <label>第 2 點<input data-cal="1" value="${esc(calMode.labels[1])}" maxlength="12" /></label>
-        <span>先放大，再點「${esc(calMode.labels[calMode.pts.length])}」軸線交點。兩點要離遠一點（例如對角），其他圖也點同樣名稱的交點。</span>
-        <button class="sk-btn" data-pn="cal-cancel">取消</button>
-      </div>` : ''}
-      ${ovOpen && !calMode ? ovPanelHTML(s) : ''}
-      <div class="pn-view ${addMode || movePin || calMode ? 'pn-adding' : ''}" id="pnView">
+      <div class="pn-view ${addMode || movePin ? 'pn-adding' : ''}" id="pnView">
         <div class="pn-stage" id="pnStage" style="width:${s.w}px;height:${s.h}px">
           <img id="pnImg" alt="平面圖" draggable="false" style="opacity:${baseAlpha}" />
-          ${ovOn.map(o => `<img class="pn-ov" data-ov="${o.id}" alt="" draggable="false"
-            style="width:${Math.round(o.w * ovScale(o))}px;height:${Math.round(o.h * ovScale(o))}px;transform:${ovMatrix(s, o)};opacity:${ovSet(o).alpha}" />`).join('')}
-          ${s.cal && (calMode || ovOpen) ? ['p1', 'p2'].map(k => `<i class="pn-cal" style="left:${s.cal[k].x * 100}%;top:${s.cal[k].y * 100}%"><span>${esc(s.cal[k].label)}</span></i>`).join('') : ''}
-          ${calMode ? calMode.pts.map(p => `<i class="pn-cal pn-cal-new" style="left:${p.x * 100}%;top:${p.y * 100}%"><span>${esc(p.label)}</span></i>`).join('') : ''}
           ${pins.filter(p => showDone || p.status === 'open' || p.status === 'doing').map(p => `
             <button class="pn-pin ${STATUS[p.status].cls} ${overdue(p) ? 'pn-pin-late' : ''}" data-pin="${p.id}" style="left:${p.x * 100}%;top:${p.y * 100}%" title="#${p.no} ${esc(p.text)}"><span>${p.no}</span></button>`).join('')}
         </div>
@@ -893,7 +882,7 @@
     d.innerHTML = `
       <div class="sk-dlg-head">
         <div class="sk-dlg-title">
-          <h3>裁切平面圖</h3>
+          <h3>${esc(crop.title || '裁切平面圖')}</h3>
           <div class="sk-dlg-meta">${esc(crop.name)}</div>
         </div>
         <button class="sk-dlg-x" type="button" data-crop="close" aria-label="關閉">✕</button>
@@ -923,7 +912,7 @@
           <li>
             <span class="pn-r-no">${i + 1}</span>
             <label>樓層<input data-ri="${i}" data-rk="floor" value="${esc(r.floor)}" list="pnFloors" maxlength="20" placeholder="例如 B2F" autocomplete="off" /></label>
-            <label>圖別<select data-ri="${i}" data-rk="kind">${KINDS.map(k => `<option ${k === r.kind ? 'selected' : ''}>${k}</option>`).join('')}</select></label>
+            <label ${crop.onSave ? 'hidden' : ''}>圖別<select data-ri="${i}" data-rk="kind">${KINDS.map(k => `<option ${k === r.kind ? 'selected' : ''}>${k}</option>`).join('')}</select></label>
             <label class="pn-r-name">圖名<input data-ri="${i}" data-rk="name" value="${esc(r.name)}" maxlength="80" /></label>
             <button type="button" class="sk-btn sk-btn-danger" data-crop="del" data-i="${i}" aria-label="刪除這個範圍">✕</button>
           </li>`).join('')}</ol>
@@ -937,7 +926,7 @@
       <div class="pn-dlg-foot">
         <span class="pn-sp"></span>
         <button type="button" class="sk-btn" data-crop="close">取消</button>
-        <button type="button" class="sk-btn sk-btn-primary" data-crop="save" ${crop.regions.length ? '' : 'disabled'}>💾 儲存 ${crop.regions.length} 張平面圖</button>
+        <button type="button" class="sk-btn sk-btn-primary" data-crop="save" ${crop.regions.length ? '' : 'disabled'}>💾 儲存 ${crop.regions.length} ${crop.onSave ? '組疊圖' : '張平面圖'}</button>
       </div>`;
     if (keep) { const w = d.querySelector('#pnCropWrap'); w.scrollLeft = keep[0]; w.scrollTop = keep[1]; }
   }
@@ -1032,6 +1021,12 @@
       b.disabled = true;
       let done = 0;
       try {
+        if (crop.onSave) { // 疊圖比對：兩張圖一起裁、存成一組
+          await crop.onSave(crop.regions, t => { b.textContent = t; });
+          crop = null;
+          cropDlg.close();
+          return;
+        }
         for (const r of crop.regions) {
           b.textContent = `處理中 ${done + 1}／${crop.regions.length}…`;
           const img = await renderRegion(r);
@@ -1240,6 +1235,578 @@
     const c = e.target.dataset.cal;
     if (c != null && calMode) calMode.labels[+c] = e.target.value;
   }
+
+  /* ======================================================================
+   * 🧩 疊圖比對（2026-11-27）
+   *   1. 選底圖、要疊上來的圖（PDF 可選頁，整張不先裁）
+   *   2. 自動對位：同一套圖印在 A1、A3 等不同紙上，用紙張大小對齊比例；再用圖框粗對位置
+   *   3. 對齊：用手指拖上層圖，或點同一個點（兩點可一併校正比例），另有上下左右微調
+   *   4. 對好再一起裁切（沿用裁切畫面），每個範圍存成一組；之後打開可調顏色、深淺、微調位置
+   * 世界座標＝底圖預覽像素；上層預覽像素 p 對到世界座標 s·p＋(tx, ty)
+   * ====================================================================== */
+  let ox = null;        // 新增中的疊圖 { base, top, s, tx, ty, color, alpha, baseAlpha, mode, taps }
+  let oxRoot = null;
+  let oxView = 'list';  // list 清單、pick 選圖、align 對齊、view 查看
+  let oxData = { overlays: [] };
+  let oxOpenId = null;
+  let oxVP = null;      // 對齊／查看畫面的縮放與位置 { s, x, y }
+  let oxSaveTimer = null;
+  const OX_TIPS = {
+    tap1: ['點<b>底圖（黑色）</b>上的一個點，例如柱中心', '再點<b>上層（彩色）</b>圖上的同一個點'],
+    tap2: ['第 1 點：點<b>底圖（黑色）</b>，例如左下角的柱中心', '第 1 點：點<b>上層（彩色）</b>的同一點',
+      '第 2 點：點<b>底圖（黑色）</b>離遠一點的另一點（例如對角）', '第 2 點：點<b>上層（彩色）</b>的同一點'],
+  };
+  const oxOf = id => oxData.overlays.find(o => o.id === id);
+  async function oxReload() { oxData = await S().load(); oxData.overlays = oxData.overlays || []; }
+
+  // 讀檔：PDF 先畫整頁預覽（最長邊 2400px），照片直接用（最長邊 5000px 以內）
+  async function oxPreview(src) {
+    const base = src.page.getViewport({ scale: 1 });
+    src.k = 2400 / Math.max(base.width, base.height);
+    const vpt = src.page.getViewport({ scale: src.k });
+    const c = document.createElement('canvas');
+    c.width = Math.round(vpt.width); c.height = Math.round(vpt.height);
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, c.width, c.height);
+    await src.page.render({ canvasContext: g, viewport: vpt, intent: 'print' }).promise;
+    return c;
+  }
+  async function oxSetPage(src, no) {
+    src.page = await src.pdf.getPage(no);
+    src.pageNo = no;
+    src.canvas = await oxPreview(src);
+    oxFinish(src);
+  }
+  function oxFinish(src) {
+    detectRegions(src.canvas);
+    src.frame = detectRegions.frame;
+    src.thumb = src.canvas.toDataURL('image/jpeg', 0.6);
+    src.label = src.name.replace(/\.[^.]+$/, '').replace(/_/g, ' ') + (src.pages > 1 ? ` 第 ${src.pageNo} 頁` : '');
+    if (src.url) URL.revokeObjectURL(src.url);
+    src.url = null;
+  }
+  async function oxLoadFile(file) {
+    const src = { name: file.name };
+    if (/pdf$/i.test(file.type) || /\.pdf$/i.test(file.name)) {
+      const lib = await loadPdfJs();
+      src.pdf = await lib.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+      src.pages = src.pdf.numPages;
+      await oxSetPage(src, 1);
+    } else {
+      const url = URL.createObjectURL(file);
+      const img = await loadImage(url);
+      URL.revokeObjectURL(url);
+      const k = Math.min(1, 5000 / Math.max(img.naturalWidth, img.naturalHeight), Math.sqrt(16e6 / (img.naturalWidth * img.naturalHeight)));
+      const c = document.createElement('canvas');
+      c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      src.canvas = c;
+      oxFinish(src);
+    }
+    return src;
+  }
+  const oxBlobURL = async c => URL.createObjectURL(await toBlob(c, 0.85));
+  // 上層換成彩色線條、白底透明（對齊畫面用；每種顏色只做一次）
+  async function oxTint(src, color) {
+    src.tints = src.tints || {};
+    if (!src.tints[color]) {
+      const k = Math.min(1, 2400 / Math.max(src.canvas.width, src.canvas.height));
+      const c = document.createElement('canvas');
+      c.width = Math.round(src.canvas.width * k); c.height = Math.round(src.canvas.height * k);
+      const g = c.getContext('2d');
+      g.drawImage(src.canvas, 0, 0, c.width, c.height);
+      const d = g.getImageData(0, 0, c.width, c.height);
+      const px = d.data, [R, G, B] = COLORS[color];
+      for (let i = 0; i < px.length; i += 4) {
+        const l = (px[i] + px[i + 1] + px[i + 2]) / 3;
+        px[i] = R; px[i + 1] = G; px[i + 2] = B;
+        px[i + 3] = Math.max(0, Math.min(255, (240 - l) * 1.8));
+      }
+      g.putImageData(d, 0, 0);
+      src.tints[color] = { url: URL.createObjectURL(await new Promise(r => c.toBlob(r, 'image/png'))), canvas: c };
+    }
+    return src.tints[color];
+  }
+  // 自動對位：比例看整張紙（同一套圖 A1、A3 只是縮放），位置先對齊兩張圖的外框左上角
+  function oxAutoAlign() {
+    const b = ox.base.canvas, t = ox.top.canvas;
+    ox.s = Math.max(b.width, b.height) / Math.max(t.width, t.height);
+    const fb = ox.base.frame, ft = ox.top.frame;
+    ox.tx = fb && ft ? fb.x0 * b.width - ox.s * ft.x0 * t.width : 0;
+    ox.ty = fb && ft ? fb.y0 * b.height - ox.s * ft.y0 * t.height : 0;
+  }
+  const oxTopTransform = () => {
+    const k = ox.top.canvas.width / ox.top.tints[ox.color].canvas.width; // 彩色預覽可能比原圖小
+    return `matrix(${ox.s * k},0,0,${ox.s * k},${ox.tx},${ox.ty})`;
+  };
+
+  /* ---------- 共用：拖曳移動、兩指／滾輪縮放、點一下 ---------- */
+  function oxBindView(v, st, opt) {
+    const pts = new Map();
+    let start = null, moved = false;
+    const local = e => { const r = v.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+    const apply = () => {
+      st.style.transform = `translate(${oxVP.x}px, ${oxVP.y}px) scale(${oxVP.s})`;
+      st.style.setProperty('--inv', 1 / oxVP.s);
+    };
+    const zoomAt = (k, cx, cy) => {
+      const s = Math.min(4, Math.max(oxVP.minS, oxVP.s * k));
+      oxVP.x = cx - (cx - oxVP.x) * (s / oxVP.s);
+      oxVP.y = cy - (cy - oxVP.y) * (s / oxVP.s);
+      oxVP.s = s;
+      apply();
+    };
+    v.addEventListener('pointerdown', e => {
+      if (e.target.closest('.pn-zoom')) return;
+      v.setPointerCapture(e.pointerId);
+      pts.set(e.pointerId, local(e));
+      moved = pts.size > 1;
+      const p = [...pts.values()];
+      start = { x: oxVP.x, y: oxVP.y, s: oxVP.s, p, d: p.length > 1 ? Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]) : 0 };
+      start.drag = p.length === 1 && opt.dragging && opt.dragging();
+      if (start.drag) opt.onDragStart();
+    });
+    v.addEventListener('pointermove', e => {
+      if (!pts.has(e.pointerId) || !start) return;
+      pts.set(e.pointerId, local(e));
+      const p = [...pts.values()];
+      if (p.length === 1 && start.p.length === 1) {
+        const dx = p[0][0] - start.p[0][0], dy = p[0][1] - start.p[0][1];
+        if (!moved && Math.hypot(dx, dy) < 6) return;
+        moved = true;
+        if (start.drag) { opt.onDrag(dx / oxVP.s, dy / oxVP.s); return; }
+        oxVP.x = start.x + dx; oxVP.y = start.y + dy;
+        apply();
+      } else if (p.length >= 2 && start.d) {
+        const d = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]);
+        const c0 = [(start.p[0][0] + start.p[1][0]) / 2, (start.p[0][1] + start.p[1][1]) / 2];
+        const c1 = [(p[0][0] + p[1][0]) / 2, (p[0][1] + p[1][1]) / 2];
+        const s = Math.min(4, Math.max(oxVP.minS, start.s * d / start.d));
+        oxVP.s = s;
+        oxVP.x = c1[0] - (c0[0] - start.x) * (s / start.s);
+        oxVP.y = c1[1] - (c0[1] - start.y) * (s / start.s);
+        apply();
+      }
+    });
+    const end = e => {
+      if (!pts.has(e.pointerId)) return;
+      const pos = pts.get(e.pointerId);
+      pts.delete(e.pointerId);
+      if (pts.size) { start = { x: oxVP.x, y: oxVP.y, s: oxVP.s, p: [...pts.values()], d: 0 }; return; }
+      const tap = !moved && e.type === 'pointerup' && start;
+      if (start && start.drag && moved && opt.onDragEnd) opt.onDragEnd();
+      start = null;
+      if (tap && opt.onTap) opt.onTap((pos[0] - oxVP.x) / oxVP.s, (pos[1] - oxVP.y) / oxVP.s);
+    };
+    v.addEventListener('pointerup', end);
+    v.addEventListener('pointercancel', end);
+    v.addEventListener('wheel', e => {
+      e.preventDefault();
+      const [cx, cy] = local(e);
+      zoomAt(e.deltaY < 0 ? 1.15 : 1 / 1.15, cx, cy);
+    }, { passive: false });
+    apply();
+    return { apply, zoom: k => zoomAt(k, v.clientWidth / 2, v.clientHeight / 2) };
+  }
+  function oxFit(v, w, h) {
+    const s = Math.min(v.clientWidth / w, v.clientHeight / h) || 0.1;
+    oxVP = { s, x: (v.clientWidth - w * s) / 2, y: (v.clientHeight - h * s) / 2, minS: s * 0.6 };
+  }
+
+  /* ---------- 畫面 ---------- */
+  function oxListHTML() {
+    const list = [...oxData.overlays].sort((a, b) => floorRank(b.floor) - floorRank(a.floor) || b.createdAt - a.createdAt);
+    return `
+      <div class="pn-head">
+        <div>
+          <h2>疊圖比對</h2>
+          <p class="pn-hint">把機電、結構圖疊在建築圖上，確認管線、設備位置有沒有打架。</p>
+        </div>
+        <button class="sk-btn sk-btn-primary pn-upload" data-ox="new">＋ 新增疊圖</button>
+      </div>
+      ${list.length ? `<div class="pn-sheets">${list.map(o => `
+        <button class="pn-sheet" data-ox="open" data-id="${o.id}">
+          <span class="pn-thumb"><img data-oxthumb="${o.base.file}" alt="" /></span>
+          <span class="pn-sheet-name"><b>${esc(o.floor)}</b>${esc(o.name)}</span>
+          <span class="ox-layers">${o.layers.map(l => `<i style="background:rgb(${COLORS[l.color].slice(0, 3)})"></i>${esc(l.label)}`).join('　')}</span>
+        </button>`).join('')}</div>` : `
+        <div class="pn-empty">
+          <div class="pn-empty-icon">🧩</div>
+          <p><b>還沒有疊圖</b></p>
+          <p>選一張<b>底圖</b>（例如建築平面圖）和一張<b>要疊上來的圖</b>（例如水電、結構），<br />
+            系統會依紙張大小自動對比例，你再拖一下或點一個柱子對齊，最後一起裁切。</p>
+          <button class="sk-btn sk-btn-primary" data-ox="new">＋ 新增第一組疊圖</button>
+        </div>`}`;
+  }
+  function oxSlotHTML(key, title, hint) {
+    const src = ox[key];
+    return `<section class="ox-slot">
+      <h3>${title}</h3>
+      <p class="pn-hint">${hint}</p>
+      ${src && src.loading ? '<div class="pn-crop-loading">讀取中…</div>' : ''}
+      ${src && src.canvas ? `
+        <div class="ox-file"><b>${esc(src.name)}</b>
+          ${src.pages > 1 ? `<label>頁數<select data-oxpage="${key}">${Array.from({ length: src.pages }, (_, i) =>
+            `<option value="${i + 1}" ${i + 1 === src.pageNo ? 'selected' : ''}>第 ${i + 1} 頁</option>`).join('')}</select></label>` : ''}
+        </div>
+        <img class="ox-thumb" src="${src.thumb}" alt="預覽" />` : ''}
+      <button class="sk-btn" data-ox="pickfile" data-slot="${key}">${src && src.canvas ? '換一個檔案' : '選檔案（PDF 或照片）'}</button>
+    </section>`;
+  }
+  function oxPickHTML() {
+    const ready = ox.base && ox.base.canvas && ox.top && ox.top.canvas;
+    return `
+      <div class="pn-bar"><button class="sk-btn" data-ox="cancel">‹ 取消</button><div class="pn-bar-title"><b>新增疊圖</b><small>第 1 步：選兩張圖</small></div></div>
+      <div class="ox-pick">
+        ${oxSlotHTML('base', '① 底圖', '通常是建築平面圖，畫成黑色')}
+        ${oxSlotHTML('top', '② 要疊上來的圖', '例如水電、結構圖，畫成彩色疊在上面')}
+      </div>
+      <div class="ox-next"><button class="sk-btn sk-btn-primary" data-ox="toalign" ${ready ? '' : 'disabled'}>下一步：對齊 ›</button></div>`;
+  }
+  function oxAlignHTML() {
+    const b = ox.base.canvas;
+    const tip = OX_TIPS[ox.mode];
+    return `
+      <div class="pn-bar"><button class="sk-btn" data-ox="topick">‹ 上一步</button>
+        <div class="pn-bar-title"><b>對齊</b><small>第 2 步　黑：${esc(ox.base.label)}　彩：${esc(ox.top.label)}</small></div>
+        <button class="sk-btn sk-btn-primary" data-ox="tocrop">下一步：裁切 ›</button></div>
+      <div class="ox-tools">
+        <div class="pn-seg ox-mode">
+          ${[['pan', '✋ 移動畫面'], ['drag', '🔀 拖上層圖'], ['tap1', '📍 點一點對齊'], ['tap2', '📍📍 兩點（含比例）']].map(([k, l]) =>
+            `<button type="button" class="${ox.mode === k ? 'on' : ''}" data-ox="mode" data-v="${k}">${l}</button>`).join('')}
+        </div>
+        <div class="ox-row">
+          <span class="ox-nudge"><span>微調</span>
+            ${[['←', -1, 0], ['↑', 0, -1], ['↓', 0, 1], ['→', 1, 0]].map(([t, x, y]) => `<button type="button" class="sk-btn" data-ox="nudge" data-x="${x}" data-y="${y}" aria-label="往${t}">${t}</button>`).join('')}
+          </span>
+          <label class="ox-ctl">顏色<select data-oxset="color">${Object.entries(COLORS).map(([k, v]) => `<option value="${k}" ${k === ox.color ? 'selected' : ''}>${v[3]}</option>`).join('')}</select></label>
+          <label class="ox-ctl">彩色深淺<input type="range" min="0.2" max="1" step="0.05" value="${ox.alpha}" data-oxset="alpha" /></label>
+          <label class="ox-ctl">黑色深淺<input type="range" min="0.1" max="1" step="0.05" value="${ox.baseAlpha}" data-oxset="baseAlpha" /></label>
+          <button type="button" class="sk-btn" data-ox="reset" title="回到自動對位的位置">↺ 自動對位</button>
+          <small class="ox-scale">比例 ×${ox.s.toFixed(4)}</small>
+        </div>
+        ${tip ? `<div class="ox-tip">📍 ${tip[ox.taps.length]}　<button type="button" class="sk-btn" data-ox="mode" data-v="pan">取消</button></div>` : ''}
+      </div>
+      <div class="pn-view ${tip ? 'pn-adding' : ''} ${ox.mode === 'drag' ? 'ox-dragging' : ''}" id="oxView">
+        <div class="pn-stage" id="oxStage" style="width:${b.width}px;height:${b.height}px">
+          <img id="oxBase" alt="底圖" draggable="false" style="opacity:${ox.baseAlpha}" />
+          <img id="oxTop" class="pn-ov" alt="" draggable="false" style="opacity:${ox.alpha}" />
+          ${ox.taps.map((p, i) => `<i class="pn-cal ${p.on === 't' ? '' : 'pn-cal-new'}" style="left:${p.x}px;top:${p.y}px"><span>${Math.floor(i / 2) + 1}${p.on === 't' ? '彩' : '黑'}</span></i>`).join('')}
+        </div>
+        <div class="pn-zoom">
+          <button data-ox="zin" aria-label="放大">＋</button>
+          <button data-ox="zout" aria-label="縮小">－</button>
+          <button data-ox="zfit" aria-label="看整張" title="看整張">⤢</button>
+        </div>
+      </div>`;
+  }
+  async function oxRenderAlign(keepView = true) {
+    const old = keepView && oxVP;
+    oxRoot.innerHTML = oxAlignHTML();
+    const v = oxRoot.querySelector('#oxView'), st = oxRoot.querySelector('#oxStage');
+    if (!old) oxFit(v, ox.base.canvas.width, ox.base.canvas.height);
+    ox.base.url = ox.base.url || await oxBlobURL(ox.base.canvas);
+    oxRoot.querySelector('#oxBase').src = ox.base.url;
+    const tint = await oxTint(ox.top, ox.color);
+    const top = oxRoot.querySelector('#oxTop');
+    if (!top) return; // 等待中已換畫面
+    Object.assign(top.style, { width: `${tint.canvas.width}px`, height: `${tint.canvas.height}px`, transform: oxTopTransform() });
+    top.src = tint.url;
+    let t0 = null;
+    oxVP.ctl = oxBindView(v, st, {
+      dragging: () => ox.mode === 'drag',
+      onDragStart: () => { t0 = [ox.tx, ox.ty]; },
+      onDrag: (dx, dy) => { ox.tx = t0[0] + dx; ox.ty = t0[1] + dy; top.style.transform = oxTopTransform(); },
+      onTap: (x, y) => oxTap(x, y),
+    });
+  }
+  function oxTap(x, y) {
+    if (!OX_TIPS[ox.mode]) return;
+    ox.taps.push({ x, y, on: ox.taps.length % 2 ? 't' : 'b' });
+    const need = ox.mode === 'tap1' ? 2 : 4;
+    if (ox.taps.length < need) { oxRenderAlign(); return; }
+    const [b1, t1, b2, t2] = ox.taps;
+    if (ox.mode === 'tap1') {
+      ox.tx += b1.x - t1.x; ox.ty += b1.y - t1.y;
+    } else {
+      // 上層的點換回上層預覽像素，重算比例與位置（以兩點中點對齊，誤差平均分到兩邊）
+      const P = t => [(t.x - ox.tx) / ox.s, (t.y - ox.ty) / ox.s];
+      const p1 = P(t1), p2 = P(t2);
+      const db = Math.hypot(b2.x - b1.x, b2.y - b1.y), dp = Math.hypot(p2[0] - p1[0], p2[1] - p1[1]);
+      if (db < 80 || dp < 10) { ox.taps = []; alertBar('兩個點太近，請選相距遠一點的位置（例如對角的柱子）'); oxRenderAlign(); return; }
+      ox.s = db / dp;
+      ox.tx = (b1.x + b2.x) / 2 - ox.s * (p1[0] + p2[0]) / 2;
+      ox.ty = (b1.y + b2.y) / 2 - ox.s * (p1[1] + p2[1]) / 2;
+    }
+    ox.taps = [];
+    ox.mode = 'pan';
+    alertBar('已對齊，放大檢查看看；還差一點可以用「微調」');
+    oxRenderAlign();
+  }
+  // 對好之後裁切：預覽圖＝底圖＋彩色上層；存檔時兩張依同一範圍高解析度重畫
+  async function oxToCrop() {
+    const b = ox.base.canvas;
+    const c = document.createElement('canvas');
+    c.width = b.width; c.height = b.height;
+    const g = c.getContext('2d');
+    g.drawImage(b, 0, 0);
+    const tint = await oxTint(ox.top, ox.color);
+    const k = ox.top.canvas.width / tint.canvas.width;
+    g.setTransform(ox.s * k, 0, 0, ox.s * k, ox.tx, ox.ty);
+    g.globalAlpha = 0.85;
+    g.drawImage(tint.canvas, 0, 0);
+    crop = { name: ox.base.name, title: '裁切疊圖範圍（第 3 步）', canvas: b, preview: c.toDataURL('image/jpeg', 0.8), onSave: oxSaveRegions };
+    c.width = c.height = 0;
+    setRegions(detectRegions(b));
+    crop.regions.forEach(r => { r.name = `${ox.base.label} × ${ox.top.label}`; });
+    cropZoom = window.innerWidth < 600 ? 1.5 : 1;
+    const d = cropDialog();
+    if (!d.open) d.showModal();
+    renderCrop();
+  }
+  async function oxRender(src, r, m) {
+    const b = ox.base.canvas;
+    const X0 = r.x0 * b.width, Y0 = r.y0 * b.height, RW = (r.x1 - r.x0) * b.width, RH = (r.y1 - r.y0) * b.height;
+    const f = Math.min(Math.sqrt(10e6 / (RW * RH)), 5000 / Math.max(RW, RH), 4);
+    const c = document.createElement('canvas');
+    c.width = Math.round(RW * f); c.height = Math.round(RH * f);
+    const g = c.getContext('2d');
+    g.fillStyle = '#fff';
+    g.fillRect(0, 0, c.width, c.height);
+    const a = f * m[0], ex = f * (m[1] - X0), ey = f * (m[2] - Y0);
+    if (src.page) {
+      const vpt = src.page.getViewport({ scale: a * src.k });
+      await src.page.render({ canvasContext: g, viewport: vpt, intent: 'print', transform: [1, 0, 0, 1, ex, ey] }).promise;
+    } else {
+      g.setTransform(a, 0, 0, a, ex, ey);
+      g.drawImage(src.canvas, 0, 0);
+    }
+    const blob = await toBlob(c, 0.85);
+    const out = { blob, w: c.width, h: c.height };
+    c.width = c.height = 0;
+    return out;
+  }
+  async function oxSaveRegions(regions, progress) {
+    const missing = regions.findIndex(r => !String(r.floor).trim());
+    if (missing >= 0) throw new Error(`請填第 ${missing + 1} 個範圍的樓層（例如 B2F）`);
+    const n = regions.length;
+    let done = 0;
+    while (regions.length) { // 存好一組就從清單拿掉，中途失敗時只剩沒存的
+      const r = regions[0];
+      progress(`處理中 ${done + 1}／${n}…`);
+      const base = await oxRender(ox.base, r, [1, 0, 0]);
+      const top = await oxRender(ox.top, r, [ox.s, ox.tx, ox.ty]);
+      const bf = await S().addPhoto(base.blob), tf = await S().addPhoto(top.blob);
+      await S().saveOverlay({
+        name: r.name, floor: r.floor.trim().toUpperCase(), w: base.w, h: base.h,
+        base: { file: bf, label: ox.base.label },
+        layers: [{ file: tf, label: ox.top.label, color: ox.color, alpha: ox.alpha }],
+      });
+      regions.shift();
+      done += 1;
+    }
+    oxClear();
+    await oxReload();
+    oxView = 'list';
+    oxRerender();
+    alertBar(`已存好 ${done} 組疊圖`);
+  }
+  function oxClear() {
+    if (!ox) return;
+    [ox.base, ox.top].forEach(src => {
+      if (!src) return;
+      if (src.url) URL.revokeObjectURL(src.url);
+      Object.values(src.tints || {}).forEach(t => URL.revokeObjectURL(t.url));
+    });
+    ox = null;
+  }
+
+  /* ---------- 查看存好的疊圖 ---------- */
+  function oxViewHTML(o) {
+    return `
+      <div class="pn-bar"><button class="sk-btn" data-ox="back">‹ 返回</button>
+        <div class="pn-bar-title"><b>${esc(o.floor)}</b><small>${esc(o.name)}</small></div>
+        ${S().canDeleteOverlay(o) ? '<button class="sk-btn sk-btn-danger" data-ox="del">刪除</button>' : ''}</div>
+      <div class="ox-tools">
+        ${o.layers.map((l, i) => `<div class="ox-row">
+          <i class="pn-ov-dot" style="background:rgb(${COLORS[l.color].slice(0, 3)})"></i><b class="ox-lname">${esc(l.label)}</b>
+          <label class="ox-ctl">顯示<input type="checkbox" data-oxl="on" data-i="${i}" ${l.hide ? '' : 'checked'} /></label>
+          <label class="ox-ctl">顏色<select data-oxl="color" data-i="${i}">${Object.entries(COLORS).map(([k, v]) => `<option value="${k}" ${k === l.color ? 'selected' : ''}>${v[3]}</option>`).join('')}</select></label>
+          <label class="ox-ctl">深淺<input type="range" min="0.1" max="1" step="0.05" value="${l.alpha}" data-oxl="alpha" data-i="${i}" /></label>
+          <span class="ox-nudge"><span>微調</span>${[['←', -1, 0], ['↑', 0, -1], ['↓', 0, 1], ['→', 1, 0]].map(([t, x, y]) =>
+            `<button type="button" class="sk-btn" data-ox="lnudge" data-i="${i}" data-x="${x}" data-y="${y}" aria-label="往${t}">${t}</button>`).join('')}</span>
+        </div>`).join('')}
+        <div class="ox-row"><label class="ox-ctl">黑色（底圖）深淺<input type="range" min="0.1" max="1" step="0.05" value="${o.baseAlpha || 1}" data-oxl="base" /></label>
+          <small class="pn-hint">黑：${esc(o.base.label)}</small></div>
+      </div>
+      <div class="pn-view" id="oxView">
+        <div class="pn-stage" id="oxStage" style="width:${o.w}px;height:${o.h}px">
+          <img id="oxBase" alt="底圖" draggable="false" style="opacity:${o.baseAlpha || 1}" />
+          ${o.layers.map((l, i) => `<img class="ox-layer" data-li="${i}" alt="" draggable="false" ${l.hide ? 'hidden' : ''}
+            style="opacity:${l.alpha};transform:translate(${l.dx}px,${l.dy}px)" />`).join('')}
+        </div>
+        <div class="pn-zoom">
+          <button data-ox="zin" aria-label="放大">＋</button>
+          <button data-ox="zout" aria-label="縮小">－</button>
+          <button data-ox="zfit" aria-label="看整張" title="看整張">⤢</button>
+        </div>
+      </div>`;
+  }
+  async function oxRenderView(keepView = true) {
+    const o = oxOf(oxOpenId);
+    if (!o) { oxView = 'list'; oxRerender(); return; }
+    const old = keepView && oxVP;
+    oxRoot.innerHTML = oxViewHTML(o);
+    const v = oxRoot.querySelector('#oxView'), st = oxRoot.querySelector('#oxStage');
+    if (!old) oxFit(v, o.w, o.h);
+    oxVP.ctl = oxBindView(v, st, {});
+    oxRoot.querySelector('#oxBase').src = await S().fileURL(o.base.file).catch(() => '');
+    for (const el of oxRoot.querySelectorAll('img[data-li]')) {
+      const l = o.layers[+el.dataset.li];
+      tinted({ id: l.file, w: o.w, h: o.h }, l.color).then(u => { el.src = u; }, e => alertBar(e.message));
+    }
+  }
+  // 顏色、深淺、微調位置：存回去（等手停下來 0.6 秒再存）
+  function oxSaveLater(o) {
+    clearTimeout(oxSaveTimer);
+    oxSaveTimer = setTimeout(async () => {
+      try {
+        const saved = await S().saveOverlay({ id: o.id, name: o.name, floor: o.floor, layers: o.layers });
+        Object.assign(o, { layers: saved.layers.map((l, i) => ({ ...l, hide: o.layers[i] && o.layers[i].hide })), updatedAt: saved.updatedAt });
+      } catch (e) { alertBar(e.message); }
+    }, 600);
+  }
+
+  function oxRerender() {
+    if (!oxRoot || !document.body.contains(oxRoot)) return;
+    if (oxView === 'align' && ox) return oxRenderAlign(false);
+    if (oxView === 'view') return oxRenderView(false);
+    if (oxView === 'pick' && ox) { oxRoot.innerHTML = oxPickHTML(); return; }
+    oxView = 'list';
+    oxRoot.innerHTML = oxListHTML();
+    oxRoot.querySelectorAll('img[data-oxthumb]').forEach(async img => { try { img.src = await S().fileURL(img.dataset.oxthumb); } catch (e) {} });
+  }
+  const oxFileInput = () => {
+    let el = document.getElementById('oxFile');
+    if (!el) {
+      el = document.createElement('input');
+      el.type = 'file';
+      el.id = 'oxFile';
+      el.accept = 'application/pdf,.pdf,image/*';
+      el.hidden = true;
+      document.body.appendChild(el);
+      el.addEventListener('change', async () => {
+        const f = el.files[0], slot = el.dataset.slot;
+        el.value = '';
+        if (!f || !ox) return;
+        ox[slot] = { loading: true };
+        oxRerender();
+        try {
+          ox[slot] = await oxLoadFile(f);
+          if (slot === 'top') ox.top.tints = {};
+        } catch (e) {
+          ox[slot] = null;
+          alertBar(`無法讀取這個檔案：${e.message}`);
+        }
+        oxRerender();
+      });
+    }
+    return el;
+  };
+  async function oxClick(e) {
+    const b = e.target.closest('[data-ox]');
+    if (!b) return;
+    const a = b.dataset.ox;
+    if (a === 'new') { oxClear(); ox = { base: null, top: null, color: 'red', alpha: 0.85, baseAlpha: 1, mode: 'pan', taps: [] }; oxView = 'pick'; oxRerender(); }
+    if (a === 'cancel') { oxClear(); oxView = 'list'; oxRerender(); }
+    if (a === 'pickfile') { const el = oxFileInput(); el.dataset.slot = b.dataset.slot; el.click(); }
+    if (a === 'toalign') { oxAutoAlign(); ox.mode = 'pan'; ox.taps = []; oxVP = null; oxView = 'align'; oxRenderAlign(false); window.scrollTo(0, 0); }
+    if (a === 'topick') { oxView = 'pick'; oxRerender(); }
+    if (a === 'tocrop') oxToCrop();
+    if (a === 'mode') { ox.mode = b.dataset.v; ox.taps = []; oxRenderAlign(); }
+    if (a === 'reset') { oxAutoAlign(); oxRenderAlign(); }
+    if (a === 'nudge') {
+      const step = 2 / oxVP.s; // 每按一次＝畫面上 2 點
+      ox.tx += +b.dataset.x * step; ox.ty += +b.dataset.y * step;
+      const top = oxRoot.querySelector('#oxTop');
+      if (top) top.style.transform = oxTopTransform();
+    }
+    if (a === 'zin' || a === 'zout') oxVP.ctl.zoom(a === 'zin' ? 1.4 : 1 / 1.4);
+    if (a === 'zfit') { oxVP = null; if (oxView === 'align') oxRenderAlign(false); else oxRenderView(false); }
+    if (a === 'open') { oxOpenId = b.dataset.id; oxVP = null; oxView = 'view'; oxRenderView(false); window.scrollTo(0, 0); }
+    if (a === 'back') { oxView = 'list'; oxRerender(); }
+    if (a === 'lnudge') {
+      const o = oxOf(oxOpenId), l = o.layers[+b.dataset.i], step = 2 / oxVP.s;
+      l.dx += +b.dataset.x * step; l.dy += +b.dataset.y * step;
+      const el = oxRoot.querySelector(`img[data-li="${b.dataset.i}"]`);
+      if (el) el.style.transform = `translate(${l.dx}px,${l.dy}px)`;
+      oxSaveLater(o);
+    }
+    if (a === 'del') {
+      // 按兩次才刪除（不用 confirm()：LINE 等 App 內建瀏覽器會擋掉）
+      if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '確定刪除？'; alertBar('再按一次「確定刪除？」就會刪除這組疊圖'); return; }
+      try {
+        await S().deleteOverlay(oxOpenId);
+        await oxReload();
+        oxView = 'list';
+        oxRerender();
+      } catch (err) { alertBar(err.message); }
+    }
+  }
+  async function oxChange(e) {
+    const t = e.target;
+    if (t.dataset.oxpage && ox) {
+      const src = ox[t.dataset.oxpage];
+      src.loading = true;
+      oxRerender();
+      await oxSetPage(src, +t.value);
+      src.loading = false;
+      src.tints = {};
+      oxRerender();
+    }
+    if (t.dataset.oxset === 'color' && ox) { ox.color = t.value; oxRenderAlign(); }
+    if (t.dataset.oxl) {
+      const o = oxOf(oxOpenId), l = o.layers[+t.dataset.i];
+      if (t.dataset.oxl === 'color') { l.color = t.value; oxSaveLater(o); oxRenderView(); }
+      if (t.dataset.oxl === 'on') { l.hide = !t.checked; const el = oxRoot.querySelector(`img[data-li="${t.dataset.i}"]`); if (el) el.hidden = l.hide; }
+    }
+  }
+  function oxInput(e) {
+    const t = e.target;
+    if (t.dataset.oxset === 'alpha' && ox) { ox.alpha = +t.value; const el = oxRoot.querySelector('#oxTop'); if (el) el.style.opacity = t.value; }
+    if (t.dataset.oxset === 'baseAlpha' && ox) { ox.baseAlpha = +t.value; const el = oxRoot.querySelector('#oxBase'); if (el) el.style.opacity = t.value; }
+    if (t.dataset.oxl === 'alpha') {
+      const o = oxOf(oxOpenId);
+      o.layers[+t.dataset.i].alpha = +t.value;
+      const el = oxRoot.querySelector(`img[data-li="${t.dataset.i}"]`);
+      if (el) el.style.opacity = t.value;
+      oxSaveLater(o);
+    }
+    if (t.dataset.oxl === 'base') {
+      const o = oxOf(oxOpenId);
+      o.baseAlpha = +t.value; // 只在這次開啟有效
+      const el = oxRoot.querySelector('#oxBase');
+      if (el) el.style.opacity = t.value;
+    }
+  }
+  registerPage('overlay', {
+    render: () => '<div class="plan-notes overlay-tool" id="oxRoot"><div class="sk-empty">載入中…</div></div>',
+    async mount(el) {
+      oxRoot = el.querySelector('#oxRoot');
+      oxRoot.addEventListener('click', oxClick);
+      oxRoot.addEventListener('change', oxChange);
+      oxRoot.addEventListener('input', oxInput);
+      oxClear(); // 切換工地後從清單開始
+      oxView = 'list';
+      try {
+        await oxReload();
+        oxRerender();
+      } catch (e) {
+        oxRoot.innerHTML = `<div class="sk-empty">無法載入：${esc(e.message)}</div>`;
+      }
+    },
+  });
 
   registerPage('plan-notes', {
     render: () => '<div class="plan-notes" id="pnRoot"><div class="sk-empty">載入中…</div></div>',

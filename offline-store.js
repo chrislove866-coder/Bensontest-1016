@@ -216,13 +216,16 @@
   async function deleteProject(id) {
     if (projects.length === 1) throw new Error('至少要保留一個工地');
     const ids = (await formsOf(id)).map(f => f.id);
-    const { sheets, pins } = await plansOf(id);
+    const { sheets, pins, overlays } = await plansOf(id);
+    const ovLeft = (await allOverlays()).filter(o => o.project !== id);
     projects = projects.filter(p => p.id !== id);
     await tx(['forms', 'kv', 'sheets', 'pins', 'files'], 'readwrite', t => {
       ids.forEach(fid => t.objectStore('forms').delete(fid));
       t.objectStore('kv').put({ key: 'projects', value: projects });
       sheets.forEach(x => { t.objectStore('sheets').delete(x.id); t.objectStore('files').delete(x.id); });
       pins.forEach(x => { t.objectStore('pins').delete(x.id); pinFiles(x).forEach(f => t.objectStore('files').delete(f)); });
+      t.objectStore('kv').put({ key: 'overlays', value: ovLeft });
+      overlays.forEach(o => overlayFiles(o).forEach(f => t.objectStore('files').delete(f)));
     });
     if (current === id) await setCurrent(projects[0].id);
   }
@@ -321,10 +324,62 @@
   const pinFiles = p => [...(p.photos || []), ...(p.fixPhotos || [])];
   const getOne = (store, id) => tx([store], 'readonly', t => req(t.objectStore(store).get(id)));
   // 兩個查詢先一起送出再等結果（Safari 舊版在 await 之後交易可能已結束）
-  const plansOf = project => tx(['sheets', 'pins'], 'readonly', t => Promise.all([
+  const plansOf = project => tx(['sheets', 'pins', 'kv'], 'readonly', t => Promise.all([
     req(t.objectStore('sheets').index('project').getAll(project)),
     req(t.objectStore('pins').index('project').getAll(project)),
-  ]).then(([sheets, pins]) => ({ sheets, pins })));
+    req(t.objectStore('kv').get('overlays')),
+  ]).then(([sheets, pins, ov]) => ({ sheets, pins, overlays: ((ov && ov.value) || []).filter(o => o.project === project) })));
+  /* 疊圖比對（2026-11-27）：kv「overlays」存所有工地的疊圖組（與主網站 plans.py clean_overlay 相同格式），圖檔在 files 表 */
+  const OV_COLORS = ['red', 'blue', 'green', 'purple', 'orange'];
+  const overlayFiles = o => [o.base.file, ...o.layers.map(l => l.file)];
+  const allOverlays = async () => (await kvGet('overlays')) || [];
+  function cleanLayerView(x, old) {
+    const num = (v, lo, hi, d) => (Number.isFinite(+v) && v !== '' && v != null ? Math.min(hi, Math.max(lo, +v)) : d);
+    return {
+      color: OV_COLORS.includes(x.color) ? x.color : (old.color || 'red'),
+      alpha: num(x.alpha, 0.1, 1, old.alpha ?? 0.85),
+      dx: num(x.dx, -5000, 5000, old.dx ?? 0), dy: num(x.dy, -5000, 5000, old.dy ?? 0),
+    };
+  }
+  function cleanOverlay(o, old) {
+    const floor = str(o.floor, 20);
+    if (!floor) throw new Error('請填寫樓層，例如 B2F');
+    const out = { name: str(o.name, 80), floor };
+    if (old) {
+      const ls = Array.isArray(o.layers) ? o.layers : [];
+      out.layers = old.layers.map((l, i) => ({ ...l, ...cleanLayerView(ls[i] || {}, l) }));
+      return out;
+    }
+    const w = Math.round(+o.w || 0), h = Math.round(+o.h || 0);
+    if (!(w > 0 && w <= 20000 && h > 0 && h <= 20000)) throw new Error('圖片尺寸不正確');
+    const layers = (Array.isArray(o.layers) ? o.layers : []).filter(x => x && okFile(x.file)).slice(0, 4);
+    if (!o.base || !okFile(o.base.file) || !layers.length) throw new Error('圖檔不完整，請重新裁切');
+    return { ...out, w, h, base: { file: o.base.file, label: str(o.base.label, 80) },
+      layers: layers.map(x => ({ file: x.file, label: str(x.label, 80), ...cleanLayerView(x, {}) })) };
+  }
+  async function saveOverlay(o) {
+    const list = await allOverlays();
+    let saved;
+    if (o.id) {
+      const i = list.findIndex(x => x.id === o.id);
+      if (i < 0) throw new Error('找不到這組疊圖，可能已被刪除');
+      saved = list[i] = { ...list[i], ...cleanOverlay(o, list[i]), updatedAt: now() };
+    } else {
+      saved = { id: newId('O'), project: current, ...cleanOverlay(o), createdAt: now(), updatedAt: now() };
+      list.push(saved);
+    }
+    await kvSet('overlays', list);
+    return saved;
+  }
+  async function deleteOverlay(id) {
+    const list = await allOverlays();
+    const o = list.find(x => x.id === id);
+    if (!o) return;
+    await tx(['kv', 'files'], 'readwrite', t => {
+      t.objectStore('kv').put({ key: 'overlays', value: list.filter(x => x.id !== id) });
+      overlayFiles(o).forEach(f => t.objectStore('files').delete(f));
+    });
+  }
   const urls = new Map(); // 圖檔 id → 物件網址（同一張圖只建立一次）
   async function fileURL(id) {
     if (!urls.has(id)) {
@@ -414,11 +469,12 @@
     r.readAsDataURL(blob);
   });
   async function exportPlans() {
-    const [sheets, pins, files] = await tx(['sheets', 'pins', 'files'], 'readonly', t => Promise.all([
-      req(t.objectStore('sheets').getAll()), req(t.objectStore('pins').getAll()), req(t.objectStore('files').getAll())]));
+    const [sheets, pins, files, ov] = await tx(['sheets', 'pins', 'files', 'kv'], 'readonly', t => Promise.all([
+      req(t.objectStore('sheets').getAll()), req(t.objectStore('pins').getAll()), req(t.objectStore('files').getAll()),
+      req(t.objectStore('kv').get('overlays'))]));
     const out = {};
     for (const f of files) out[f.id] = await toDataURL(f.blob);
-    return { sheets, pins, files: out };
+    return { sheets, pins, overlays: (ov && ov.value) || [], files: out };
   }
   async function importPlans(plans) {
     if (!plans || typeof plans !== 'object') return 0;
@@ -442,10 +498,20 @@
     for (const [id, url] of Object.entries(plans.files || {})) {
       if (okFile(id) && /^data:image\/(jpeg|png);base64,/.test(url)) files.push({ id, blob: await (await fetch(url)).blob() });
     }
-    await tx(['sheets', 'pins', 'files'], 'readwrite', t => {
+    const ovList = await allOverlays();
+    (plans.overlays || []).forEach(o => {
+      if (!o || typeof o.id !== 'string' || !known.has(o.project)) return;
+      try {
+        const c = { ...o, ...cleanOverlay(o) };
+        const i = ovList.findIndex(x => x.id === o.id);
+        if (i >= 0) ovList[i] = c; else ovList.push(c);
+      } catch (e) {}
+    });
+    await tx(['sheets', 'pins', 'files', 'kv'], 'readwrite', t => {
       files.forEach(f => t.objectStore('files').put(f));
       sheets.forEach(s => t.objectStore('sheets').put(s));
       pins.forEach(p => t.objectStore('pins').put(p));
+      t.objectStore('kv').put({ key: 'overlays', value: ovList });
     });
     return pins.length;
   }
@@ -482,6 +548,8 @@
     },
     canDeleteSheet: () => true,
     canDeletePin: () => true,
+    saveOverlay, deleteOverlay,
+    canDeleteOverlay: () => true,
     userName: () => { try { return localStorage.getItem('plan-by') || ''; } catch (e) { return ''; } },
   };
 
