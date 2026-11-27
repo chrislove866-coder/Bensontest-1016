@@ -49,3 +49,6 @@ python tools/build_offline.py
 | `sw.js`、`manifest.webmanifest` | 離線快取、安裝到主畫面 |
 | `css/`、`js/pages/`、`js/vendor/`、`data/` | 由 build_offline.py 從主網站複製，**請勿直接修改** |
 | `icons/` | App 圖示（build_offline.py 自動產生） |
+
+## 版權
+© 2026 周柏駪 版權所有。未經書面同意，不得重製、改作或散布（詳見 LICENSE）。

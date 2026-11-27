@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /**
  * 鋼筋快查（主網站與離線版共用，原始檔在 web-prototype/js/pages/rebar.js）
  * 選鋼筋號數、混凝土強度 fc'、鋼筋強度 fy → 受拉伸展長度、受拉搭接長度（甲／乙級）、受壓伸展與搭接長度、保護層。
@@ -15,6 +16,7 @@
  * 與美國 ACI 318-19 公式相同（6.6、5.3 為 ACI 25、20 [psi] 換算 kgf/cm²），差別：ACI 把 ψg 乘在 ℓd，台灣只乘在搭接。
  */
 (function () {
+  const CALC_REV = 'c57a6c38ab77cf19071edfcea24ca4ed74265828fc3ff4c57200daa319188335'; // 計算核心版本識別碼
   const KEY = 'rebarTool';
   // CNS 560 標稱直徑（cm）
   const BARS = [
@@ -356,5 +358,6 @@
   });
 
   // 給測試用：window.REBAR_CALC('D19', {fc:280, fy:4200})
+  window.REBAR_CALC_REV = CALC_REV;
   window.REBAR_CALC = (bar, s) => calc(bar, Object.assign({ tight: false, epoxy: 0, light: false, hkCover: true }, s));
 })();

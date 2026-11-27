@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /* 平面圖巡查筆記（js/pages/plan-notes.js；主網站與離線版共用） */
 .plan-notes, .pn-dialog, .pn-crop-dlg, #pnPrint {
   --pn-open: #e5484d; --pn-doing: #e8a317; --pn-done: #3fb43f; --pn-info: #2f7bf5;

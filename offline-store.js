@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /**
  * 自主檢查表離線版：資料存在裝置本身（瀏覽器 IndexedDB），不需伺服器、不需網路
  * 提供與主網站相同介面的 SK_STORE（見 web-prototype/js/selfcheck-store-server.js），
@@ -19,6 +20,7 @@
  * 自訂範本與內建範本一起使用；沒有越南文，切到越南文時顯示中文。
  */
 (function () {
+  const STORE_REV = 'c57a6c38ab77cf19071edfcea24ca4ed74265828fc3ff4c57200daa319188335'; // 資料格式識別碼
   const DB_NAME = 'selfcheck-offline';
   const BACKUP_APP = 'selfcheck-offline';
   const REMIND_DAYS = 7;

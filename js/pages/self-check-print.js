@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /**
  * 自主檢查表：列印／PDF 用的 A4 版面（依公司 Word 範本的表格格式）
  *   SelfCheckPrint.paperHTML(form, tpl, ctx)  回傳 A4 頁面 HTML

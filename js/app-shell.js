@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /**
  * 酪梨營造工具箱：外框邏輯（主網站與離線版共用，原始檔在 web-prototype/js/app-shell.js）
  * 資料來源 window.APP_STORE：離線版 offline-store.js（裝置本身）、主網站 js/server-store.js（伺服器）。
@@ -12,6 +13,8 @@
  *   - 主網站：右上角顯示登入者（修改自己的密碼、帳號管理、登出）
  */
 (function () {
+  const UI_REV = 'c57a6c38ab77cf19071edfcea24ca4ed74265828fc3ff4c57200daa319188335'; // 介面版本識別碼
+  document.documentElement.dataset.uiRev = UI_REV;
   const content = document.getElementById('content');
   const sel = document.getElementById('olProject');
   const dlg = document.getElementById('olDialog');

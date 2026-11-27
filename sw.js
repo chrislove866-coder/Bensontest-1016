@@ -1,9 +1,10 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /**
  * 自主檢查表離線版：Service Worker
  * 第一次開啟時把所有檔案存到裝置，之後沒有網路也能開啟。
  * VERSION 由 tools/build_offline.py 依檔案內容自動更新；版本變了會換新快取。
  */
-const VERSION = 'c81beb160f';
+const VERSION = '8233dfe1da';
 const CACHE = `selfcheck-offline-${VERSION}`;
 const FILES = [
   './',

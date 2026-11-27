@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /* 鋼筋快查（js/pages/rebar.js；主網站與離線版共用） */
 .rb { --rb: #2f5a1c; --rb-l: #eef5df; --rb-top: #c4600e; max-width: 1100px; margin: 0 auto; }
 .rb-head h2 { display: none; } /* 上方工具列已有標題 */

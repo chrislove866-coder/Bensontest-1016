@@ -1,3 +1,4 @@
+/*! © 2026 周柏駪 版權所有 All rights reserved. 未經書面同意，不得重製、改作或散布。 */
 /**
  * 平面圖巡查筆記（主網站與離線版共用，原始檔在 web-prototype/js/pages/plan-notes.js）
  * 資料來源 window.PLAN_STORE：主網站 js/server-store.js（伺服器）、離線版 offline-store.js（裝置）。
@@ -11,6 +12,7 @@
  * PDF 用 js/vendor/pdfjs（Mozilla pdf.js 3.11.174），第一次上傳 PDF 時才載入。
  */
 (function () {
+  const PN_SEG = ['c57a6c38ab77cf19', '071edfcea24ca4ed', '74265828fc3ff4c5', '7200daa319188335']; // 繪圖分段識別碼
   const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const S = () => window.PLAN_STORE;
   const STATUS = {
