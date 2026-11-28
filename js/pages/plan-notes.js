@@ -1242,7 +1242,9 @@
    *   2. 自動對位：同一套圖印在 A1、A3 等不同紙上，用紙張大小對齊比例；再用圖框粗對位置
    *   3. 對齊：用手指拖上層圖，或點同一個點（兩點可一併校正比例），另有上下左右微調
    *   4. 對好再一起裁切（沿用裁切畫面），每個範圍存成一組；之後打開可調顏色、深淺、微調位置
-   * 世界座標＝底圖預覽像素；上層預覽像素 p 對到世界座標 s·p＋(tx, ty)
+   * 5. 存好的一組可以再「＋ 加一張圖」（2026-11-28，例如結構＋機電＋消防，最多 4 張）：
+   *    底圖改用存好的裁切圖，依存檔時記下的裁切位置 ref 自動粗對位，對好後直接存成新圖層（不用再裁切）
+   * 世界座標＝底圖預覽像素（加圖層時＝存好的底圖像素）；上層預覽像素 p 對到世界座標 s·p＋(tx, ty)
    * ====================================================================== */
   let ox = null;        // 新增中的疊圖 { base, top, s, tx, ty, color, alpha, baseAlpha, mode, taps }
   let oxRoot = null;
@@ -1251,12 +1253,16 @@
   let oxOpenId = null;
   let oxVP = null;      // 對齊／查看畫面的縮放與位置 { s, x, y }
   let oxSaveTimer = null;
+  let oxMore = -1;      // 查看畫面展開「⚙ 調整」的是第幾張
   const OX_TIPS = {
     tap1: ['點<b>底圖（黑色）</b>上的一個點，例如柱中心', '再點<b>上層（彩色）</b>圖上的同一個點'],
     tap2: ['第 1 點：點<b>底圖（黑色）</b>，例如左下角的柱中心', '第 1 點：點<b>上層（彩色）</b>的同一點',
       '第 2 點：點<b>底圖（黑色）</b>離遠一點的另一點（例如對角）', '第 2 點：點<b>上層（彩色）</b>的同一點'],
   };
+  const OX_MAX = 4; // 一組最多疊幾張
+  const OX_KINDS = [['結構', 'green'], ['機電', 'blue'], ['消防', 'red'], ['建築', 'purple'], ['其他', 'orange']];
   const oxOf = id => oxData.overlays.find(o => o.id === id);
+  const oxTopLabel = () => (ox.kind ? `${ox.kind}｜` : '') + ox.top.label;
   async function oxReload() { oxData = await S().load(); oxData.overlays = oxData.overlays || []; }
 
   // 讀檔：PDF 先畫整頁預覽（最長邊 2400px），照片直接用（最長邊 5000px 以內）
@@ -1330,11 +1336,28 @@
   }
   // 自動對位：比例看整張紙（同一套圖 A1、A3 只是縮放），位置先對齊兩張圖的外框左上角
   function oxAutoAlign() {
+    if (ox.addTo) return oxAutoAlignAdd();
     const b = ox.base.canvas, t = ox.top.canvas;
     ox.s = Math.max(b.width, b.height) / Math.max(t.width, t.height);
     const fb = ox.base.frame, ft = ox.top.frame;
     ox.tx = fb && ft ? fb.x0 * b.width - ox.s * ft.x0 * t.width : 0;
     ox.ty = fb && ft ? fb.y0 * b.height - ox.s * ft.y0 * t.height : 0;
+  }
+  // 加圖層：先在原本整張底圖上照上面的方法對位，再換算到裁切後的底圖（ref＝存檔時記下的裁切位置）
+  function oxAutoAlignAdd() {
+    const o = oxOf(ox.addTo), r = o && o.ref, t = ox.top.canvas, ft = ox.top.frame;
+    if (!r) { // 11-28 以前存的疊圖沒有記裁切位置：先縮到差不多大，請使用者用兩點對齊
+      ox.s = Math.max(o.w, o.h) / Math.max(t.width, t.height);
+      ox.tx = ox.ty = 0;
+      ox.noRef = true;
+      return;
+    }
+    const s0 = Math.max(r.bw, r.bh) / Math.max(t.width, t.height);
+    const tx0 = r.fx != null && ft ? r.fx - s0 * ft.x0 * t.width : 0;
+    const ty0 = r.fy != null && ft ? r.fy - s0 * ft.y0 * t.height : 0;
+    ox.s = r.f * s0;
+    ox.tx = r.f * (tx0 - r.x0);
+    ox.ty = r.f * (ty0 - r.y0);
   }
   const oxTopTransform = () => {
     const k = ox.top.canvas.width / ox.top.tints[ox.color].canvas.width; // 彩色預覽可能比原圖小
@@ -1444,6 +1467,8 @@
     return `<section class="ox-slot">
       <h3>${title}</h3>
       <p class="pn-hint">${hint}</p>
+      ${key === 'top' ? `<div class="pn-seg ox-kind">${OX_KINDS.map(([k, c]) =>
+        `<button type="button" class="${ox.kind === k ? 'on' : ''}" data-ox="kind" data-v="${k}"><i style="background:rgb(${COLORS[c].slice(0, 3)})"></i>${k}</button>`).join('')}</div>` : ''}
       ${src && src.loading ? '<div class="pn-crop-loading">讀取中…</div>' : ''}
       ${src && src.canvas ? `
         <div class="ox-file"><b>${esc(src.name)}</b>
@@ -1456,11 +1481,26 @@
   }
   function oxPickHTML() {
     const ready = ox.base && ox.base.canvas && ox.top && ox.top.canvas;
+    if (ox.addTo) {
+      const o = oxOf(ox.addTo);
+      return `
+      <div class="pn-bar"><button class="sk-btn" data-ox="cancel">‹ 取消</button><div class="pn-bar-title"><b>加一張圖</b><small>${esc(o.floor)}　${esc(o.name)}（目前 ${o.layers.length} 張）</small></div></div>
+      <div class="ox-pick">
+        <section class="ox-slot">
+          <h3>① 底圖（已裁切好）</h3>
+          <p class="pn-hint">${esc(o.base.label)}</p>
+          <img class="ox-thumb" src="${ox.base.url}" alt="底圖" />
+          <p class="ox-layers">已疊：${o.layers.map(l => `<i style="background:rgb(${COLORS[l.color].slice(0, 3)})"></i>${esc(l.label)}`).join('　')}</p>
+        </section>
+        ${oxSlotHTML('top', '② 要再疊上來的圖', '先選這張是哪一種圖（會用不同顏色），再選檔案')}
+      </div>
+      <div class="ox-next"><button class="sk-btn sk-btn-primary" data-ox="toalign" ${ready ? '' : 'disabled'}>下一步：對齊 ›</button></div>`;
+    }
     return `
       <div class="pn-bar"><button class="sk-btn" data-ox="cancel">‹ 取消</button><div class="pn-bar-title"><b>新增疊圖</b><small>第 1 步：選兩張圖</small></div></div>
       <div class="ox-pick">
         ${oxSlotHTML('base', '① 底圖', '通常是建築平面圖，畫成黑色')}
-        ${oxSlotHTML('top', '② 要疊上來的圖', '例如水電、結構圖，畫成彩色疊在上面')}
+        ${oxSlotHTML('top', '② 要疊上來的圖', '先選這張是哪一種圖（會用不同顏色），再選檔案。之後還可以再加結構、機電、消防等圖，最多 4 張')}
       </div>
       <div class="ox-next"><button class="sk-btn sk-btn-primary" data-ox="toalign" ${ready ? '' : 'disabled'}>下一步：對齊 ›</button></div>`;
   }
@@ -1470,7 +1510,7 @@
     return `
       <div class="pn-bar"><button class="sk-btn" data-ox="topick">‹ 上一步</button>
         <div class="pn-bar-title"><b>對齊</b><small>第 2 步　黑：${esc(ox.base.label)}　彩：${esc(ox.top.label)}</small></div>
-        <button class="sk-btn sk-btn-primary" data-ox="tocrop">下一步：裁切 ›</button></div>
+        <button class="sk-btn sk-btn-primary" data-ox="tocrop">${ox.addTo ? '✓ 存成新的一層' : '下一步：裁切 ›'}</button></div>
       <div class="ox-tools">
         <div class="pn-seg ox-mode">
           ${[['pan', '✋ 移動畫面'], ['drag', '🔀 拖上層圖'], ['tap1', '📍 點一點對齊'], ['tap2', '📍📍 兩點（含比例）']].map(([k, l]) =>
@@ -1486,6 +1526,7 @@
           <button type="button" class="sk-btn" data-ox="reset" title="回到自動對位的位置">↺ 自動對位</button>
           <small class="ox-scale">比例 ×${ox.s.toFixed(4)}</small>
         </div>
+        ${ox.noRef && !tip ? '<div class="ox-tip">這組是 11/28 以前存的，沒辦法自動對位，請用「📍📍 兩點（含比例）」對齊</div>' : ''}
         ${tip ? `<div class="ox-tip">📍 ${tip[ox.taps.length]}　<button type="button" class="sk-btn" data-ox="mode" data-v="pan">取消</button></div>` : ''}
       </div>
       <div class="pn-view ${tip ? 'pn-adding' : ''} ${ox.mode === 'drag' ? 'ox-dragging' : ''}" id="oxView">
@@ -1565,10 +1606,11 @@
     if (!d.open) d.showModal();
     renderCrop();
   }
-  async function oxRender(src, r, m) {
+  // fixF：指定放大倍數（加圖層時用 1，畫出來跟存好的底圖一樣大）
+  async function oxRender(src, r, m, fixF) {
     const b = ox.base.canvas;
     const X0 = r.x0 * b.width, Y0 = r.y0 * b.height, RW = (r.x1 - r.x0) * b.width, RH = (r.y1 - r.y0) * b.height;
-    const f = Math.min(Math.sqrt(10e6 / (RW * RH)), 5000 / Math.max(RW, RH), 4);
+    const f = fixF || Math.min(Math.sqrt(10e6 / (RW * RH)), 5000 / Math.max(RW, RH), 4);
     const c = document.createElement('canvas');
     c.width = Math.round(RW * f); c.height = Math.round(RH * f);
     const g = c.getContext('2d');
@@ -1583,7 +1625,7 @@
       g.drawImage(src.canvas, 0, 0);
     }
     const blob = await toBlob(c, 0.85);
-    const out = { blob, w: c.width, h: c.height };
+    const out = { blob, w: c.width, h: c.height, f: c.width / RW };
     c.width = c.height = 0;
     return out;
   }
@@ -1598,10 +1640,13 @@
       const base = await oxRender(ox.base, r, [1, 0, 0]);
       const top = await oxRender(ox.top, r, [ox.s, ox.tx, ox.ty]);
       const bf = await S().addPhoto(base.blob), tf = await S().addPhoto(top.blob);
+      const b = ox.base.canvas, fr = ox.base.frame;
       await S().saveOverlay({
         name: r.name, floor: r.floor.trim().toUpperCase(), w: base.w, h: base.h,
         base: { file: bf, label: ox.base.label },
-        layers: [{ file: tf, label: ox.top.label, color: ox.color, alpha: ox.alpha }],
+        layers: [{ file: tf, label: oxTopLabel(), color: ox.color, alpha: ox.alpha }],
+        ref: { bw: b.width, bh: b.height, fx: fr ? fr.x0 * b.width : null, fy: fr ? fr.y0 * b.height : null,
+          x0: r.x0 * b.width, y0: r.y0 * b.height, f: base.f },
       });
       regions.shift();
       done += 1;
@@ -1612,11 +1657,35 @@
     oxRerender();
     alertBar(`已存好 ${done} 組疊圖`);
   }
+  // 加圖層：上層依存好的底圖大小畫一張，加到這組最後面
+  async function oxSaveLayer(btn) {
+    const o = oxOf(ox.addTo);
+    if (!o) { alertBar('找不到這組疊圖，可能已被刪除'); return; }
+    if (btn) { btn.disabled = true; btn.textContent = '處理中…'; }
+    try {
+      const top = await oxRender(ox.top, { x0: 0, y0: 0, x1: 1, y1: 1 }, [ox.s, ox.tx, ox.ty], 1);
+      const tf = await S().addPhoto(top.blob);
+      clearTimeout(oxSaveTimer);
+      await S().saveOverlay({
+        id: o.id, name: o.name, floor: o.floor,
+        layers: [...o.layers.map(({ hide, ...l }) => l), { file: tf, label: oxTopLabel(), color: ox.color, alpha: ox.alpha }],
+      });
+      const id = o.id;
+      oxClear();
+      await oxReload();
+      oxOpenId = id; oxVP = null; oxView = 'view'; oxMore = -1;
+      oxRerender();
+      alertBar('已加上新的一層');
+    } catch (e) {
+      alertBar(e.message);
+      if (btn) { btn.disabled = false; btn.textContent = '✓ 存成新的一層'; }
+    }
+  }
   function oxClear() {
     if (!ox) return;
     [ox.base, ox.top].forEach(src => {
       if (!src) return;
-      if (src.url) URL.revokeObjectURL(src.url);
+      if (src.url && !src.keepUrl) URL.revokeObjectURL(src.url);
       Object.values(src.tints || {}).forEach(t => URL.revokeObjectURL(t.url));
     });
     ox = null;
@@ -1629,16 +1698,24 @@
         <div class="pn-bar-title"><b>${esc(o.floor)}</b><small>${esc(o.name)}</small></div>
         ${S().canDeleteOverlay(o) ? '<button class="sk-btn sk-btn-danger" data-ox="del">刪除</button>' : ''}</div>
       <div class="ox-tools">
-        ${o.layers.map((l, i) => `<div class="ox-row">
-          <i class="pn-ov-dot" style="background:rgb(${COLORS[l.color].slice(0, 3)})"></i><b class="ox-lname">${esc(l.label)}</b>
-          <label class="ox-ctl">顯示<input type="checkbox" data-oxl="on" data-i="${i}" ${l.hide ? '' : 'checked'} /></label>
+        ${o.layers.map((l, i) => `<div class="ox-row ox-lrow">
+          <label class="ox-lshow"><input type="checkbox" data-oxl="on" data-i="${i}" ${l.hide ? '' : 'checked'} aria-label="顯示" />
+            <i class="pn-ov-dot" style="background:rgb(${COLORS[l.color].slice(0, 3)})"></i><b class="ox-lname">${esc(l.label)}</b></label>
+          <input type="range" min="0.1" max="1" step="0.05" value="${l.alpha}" data-oxl="alpha" data-i="${i}" aria-label="深淺" />
+          <button type="button" class="sk-btn ox-lmore ${oxMore === i ? 'on' : ''}" data-ox="lmore" data-i="${i}">⚙ 調整</button>
+        </div>
+        ${oxMore === i ? `<div class="ox-row ox-more">
           <label class="ox-ctl">顏色<select data-oxl="color" data-i="${i}">${Object.entries(COLORS).map(([k, v]) => `<option value="${k}" ${k === l.color ? 'selected' : ''}>${v[3]}</option>`).join('')}</select></label>
-          <label class="ox-ctl">深淺<input type="range" min="0.1" max="1" step="0.05" value="${l.alpha}" data-oxl="alpha" data-i="${i}" /></label>
           <span class="ox-nudge"><span>微調</span>${[['←', -1, 0], ['↑', 0, -1], ['↓', 0, 1], ['→', 1, 0]].map(([t, x, y]) =>
             `<button type="button" class="sk-btn" data-ox="lnudge" data-i="${i}" data-x="${x}" data-y="${y}" aria-label="往${t}">${t}</button>`).join('')}</span>
-        </div>`).join('')}
-        <div class="ox-row"><label class="ox-ctl">黑色（底圖）深淺<input type="range" min="0.1" max="1" step="0.05" value="${o.baseAlpha || 1}" data-oxl="base" /></label>
-          <small class="pn-hint">黑：${esc(o.base.label)}</small></div>
+          ${o.layers.length > 1 && S().canDeleteOverlay(o) ? `<button type="button" class="sk-btn ox-ldel" data-ox="ldel" data-i="${i}">移除這張</button>` : ''}
+        </div>` : ''}`).join('')}
+        <div class="ox-row ox-lrow">
+          <span class="ox-lshow"><i class="pn-ov-dot" style="background:#222"></i><b class="ox-lname">底圖｜${esc(o.base.label)}</b></span>
+          <input type="range" min="0.1" max="1" step="0.05" value="${o.baseAlpha || 1}" data-oxl="base" aria-label="底圖深淺" />
+          ${o.layers.length < OX_MAX ? '<button type="button" class="sk-btn ox-add" data-ox="addlayer">＋ 加一張圖</button>' : '<span class="ox-lmore"></span>'}
+        </div>
+        <small class="pn-hint">勾選＝顯示，拉桿＝深淺；按「⚙ 調整」可換顏色、微調位置。最多疊 ${OX_MAX} 張（結構、機電、消防…），目前 ${o.layers.length} 張</small>
       </div>
       <div class="pn-view" id="oxView">
         <div class="pn-stage" id="oxStage" style="width:${o.w}px;height:${o.h}px">
@@ -1719,11 +1796,29 @@
     if (!b) return;
     const a = b.dataset.ox;
     if (a === 'new') { oxClear(); ox = { base: null, top: null, color: 'red', alpha: 0.85, baseAlpha: 1, mode: 'pan', taps: [] }; oxView = 'pick'; oxRerender(); }
-    if (a === 'cancel') { oxClear(); oxView = 'list'; oxRerender(); }
+    if (a === 'addlayer') {
+      const o = oxOf(oxOpenId);
+      if (!o) return;
+      let url;
+      try { url = await S().fileURL(o.base.file); } catch (err) { alertBar(err.message); return; }
+      const used = o.layers.map(l => l.color);
+      const kind = OX_KINDS.find(([, c]) => !used.includes(c)) || OX_KINDS[4];
+      oxClear();
+      ox = { addTo: o.id, top: null, kind: kind[0], color: kind[1], alpha: 0.85, baseAlpha: 1, mode: 'pan', taps: [],
+        base: { name: o.base.label, label: o.base.label, canvas: { width: o.w, height: o.h }, url, keepUrl: true, frame: null } };
+      oxView = 'pick'; oxRerender(); window.scrollTo(0, 0);
+    }
+    if (a === 'kind') { ox.kind = b.dataset.v; ox.color = OX_KINDS.find(([k]) => k === ox.kind)[1]; oxRerender(); }
+    if (a === 'cancel') {
+      const back = ox && ox.addTo;
+      oxClear();
+      if (back) { oxOpenId = back; oxVP = null; oxView = 'view'; } else oxView = 'list';
+      oxRerender();
+    }
     if (a === 'pickfile') { const el = oxFileInput(); el.dataset.slot = b.dataset.slot; el.click(); }
     if (a === 'toalign') { oxAutoAlign(); ox.mode = 'pan'; ox.taps = []; oxVP = null; oxView = 'align'; oxRenderAlign(false); window.scrollTo(0, 0); }
     if (a === 'topick') { oxView = 'pick'; oxRerender(); }
-    if (a === 'tocrop') oxToCrop();
+    if (a === 'tocrop') { if (ox.addTo) oxSaveLayer(b); else oxToCrop(); }
     if (a === 'mode') { ox.mode = b.dataset.v; ox.taps = []; oxRenderAlign(); }
     if (a === 'reset') { oxAutoAlign(); oxRenderAlign(); }
     if (a === 'nudge') {
@@ -1734,7 +1829,7 @@
     }
     if (a === 'zin' || a === 'zout') oxVP.ctl.zoom(a === 'zin' ? 1.4 : 1 / 1.4);
     if (a === 'zfit') { oxVP = null; if (oxView === 'align') oxRenderAlign(false); else oxRenderView(false); }
-    if (a === 'open') { oxOpenId = b.dataset.id; oxVP = null; oxView = 'view'; oxRenderView(false); window.scrollTo(0, 0); }
+    if (a === 'open') { oxMore = -1; oxOpenId = b.dataset.id; oxVP = null; oxView = 'view'; oxRenderView(false); window.scrollTo(0, 0); }
     if (a === 'back') { oxView = 'list'; oxRerender(); }
     if (a === 'lnudge') {
       const o = oxOf(oxOpenId), l = o.layers[+b.dataset.i], step = 2 / oxVP.s;
@@ -1742,6 +1837,19 @@
       const el = oxRoot.querySelector(`img[data-li="${b.dataset.i}"]`);
       if (el) el.style.transform = `translate(${l.dx}px,${l.dy}px)`;
       oxSaveLater(o);
+    }
+    if (a === 'lmore') { oxMore = oxMore === +b.dataset.i ? -1 : +b.dataset.i; oxRenderView(); }
+    if (a === 'ldel') {
+      if (!b.dataset.sure) { b.dataset.sure = '1'; b.textContent = '確定移除？'; alertBar('再按一次「確定移除？」就會拿掉這一張圖（底圖和其他張不受影響）'); return; }
+      const o = oxOf(oxOpenId);
+      clearTimeout(oxSaveTimer);
+      try {
+        await S().saveOverlay({ id: o.id, name: o.name, floor: o.floor, layers: o.layers.filter((_, i) => i !== +b.dataset.i).map(({ hide, ...l }) => l) });
+        await oxReload();
+        oxMore = -1;
+        oxRenderView();
+        alertBar('已移除這一張');
+      } catch (err) { alertBar(err.message); }
     }
     if (a === 'del') {
       // 按兩次才刪除（不用 confirm()：LINE 等 App 內建瀏覽器會擋掉）

@@ -345,17 +345,41 @@
     const floor = str(o.floor, 20);
     if (!floor) throw new Error('請填寫樓層，例如 B2F');
     const out = { name: str(o.name, 80), floor };
-    if (old) {
-      const ls = Array.isArray(o.layers) ? o.layers : [];
-      out.layers = old.layers.map((l, i) => ({ ...l, ...cleanLayerView(ls[i] || {}, l) }));
+    if (old) { // 2026-11-28 起可加圖層、移除圖層（依圖檔對照；沒帶 file 時照順序對）
+      const ls = (Array.isArray(o.layers) ? o.layers : []).filter(x => x && typeof x === 'object');
+      if (!ls.length || !ls.every(x => x.file)) {
+        out.layers = old.layers.map((l, i) => ({ ...l, ...cleanLayerView(ls[i] || {}, l) }));
+        return out;
+      }
+      const seen = new Set();
+      out.layers = [];
+      for (const x of ls.slice(0, 4)) {
+        if (seen.has(x.file)) continue;
+        seen.add(x.file);
+        const l = old.layers.find(y => y.file === x.file);
+        if (l) out.layers.push({ ...l, ...cleanLayerView(x, l) });
+        else if (okFile(x.file) && x.file !== old.base.file) out.layers.push({ file: x.file, label: str(x.label, 80), ...cleanLayerView(x, {}) });
+        else throw new Error('圖檔不完整，請重新加入這張圖');
+      }
+      if (!out.layers.length) throw new Error('至少要留一張疊上來的圖');
       return out;
     }
     const w = Math.round(+o.w || 0), h = Math.round(+o.h || 0);
     if (!(w > 0 && w <= 20000 && h > 0 && h <= 20000)) throw new Error('圖片尺寸不正確');
     const layers = (Array.isArray(o.layers) ? o.layers : []).filter(x => x && okFile(x.file)).slice(0, 4);
     if (!o.base || !okFile(o.base.file) || !layers.length) throw new Error('圖檔不完整，請重新裁切');
+    const ref = cleanRef(o.ref);
     return { ...out, w, h, base: { file: o.base.file, label: str(o.base.label, 80) },
-      layers: layers.map(x => ({ file: x.file, label: str(x.label, 80), ...cleanLayerView(x, {}) })) };
+      layers: layers.map(x => ({ file: x.file, label: str(x.label, 80), ...cleanLayerView(x, {}) })), ...(ref ? { ref } : {}) };
+  }
+  // 裁切位置（之後加圖層自動粗對位用，同主網站 plans.py clean_ref）
+  function cleanRef(r) {
+    if (!r || typeof r !== 'object') return null;
+    const out = {};
+    for (const k of ['bw', 'bh', 'x0', 'y0', 'f']) { if (!Number.isFinite(+r[k]) || r[k] === null || r[k] === '') return null; out[k] = +r[k]; }
+    for (const k of ['fx', 'fy']) { if (r[k] == null) out[k] = null; else if (Number.isFinite(+r[k])) out[k] = +r[k]; else return null; }
+    if (!(out.bw > 0 && out.bw <= 20000 && out.bh > 0 && out.bh <= 20000 && out.f > 0 && out.f <= 20)) return null;
+    return out;
   }
   async function saveOverlay(o) {
     const list = await allOverlays();
@@ -363,7 +387,16 @@
     if (o.id) {
       const i = list.findIndex(x => x.id === o.id);
       if (i < 0) throw new Error('找不到這組疊圖，可能已被刪除');
+      const before = overlayFiles(list[i]);
       saved = list[i] = { ...list[i], ...cleanOverlay(o, list[i]), updatedAt: now() };
+      const gone = before.filter(f => !overlayFiles(saved).includes(f)); // 移除的圖層
+      if (gone.length) {
+        await tx(['kv', 'files'], 'readwrite', t => {
+          t.objectStore('kv').put({ key: 'overlays', value: list });
+          gone.forEach(f => t.objectStore('files').delete(f));
+        });
+        return saved;
+      }
     } else {
       saved = { id: newId('O'), project: current, ...cleanOverlay(o), createdAt: now(), updatedAt: now() };
       list.push(saved);
